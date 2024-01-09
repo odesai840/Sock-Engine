@@ -9,7 +9,6 @@
 #include "SockMath.h"
 #include "Surface.h"
 #include "GDIPlusManager.h"
-#include "imgui/imgui.h"
 
 GDIPlusManager gdipm;
 
@@ -82,29 +81,12 @@ App::App()
 void App::DoFrame()
 {
 	const auto dt = timer.Mark();
-
-	if (wnd.kbd.KeyIsPressed(VK_SPACE))
-	{
-		wnd.Gfx().DisableImgui();
-	}
-	else
-	{
-		wnd.Gfx().EnableImgui();
-	}
-	wnd.Gfx().BeginFrame(0.07f, 0.0f, 0.12f);
-
+	wnd.Gfx().ClearBuffer(0.07f, 0.0f, 0.12f);
 	for (auto& d : drawables)
 	{
 		d->Update(wnd.kbd.KeyIsPressed(VK_SPACE) ? 0.0f : dt);
 		d->Draw(wnd.Gfx());
 	}
-
-	if (show_demo_window)
-	{
-		ImGui::ShowDemoWindow(&show_demo_window);
-	}
-
-	// present
 	wnd.Gfx().EndFrame();
 }
 

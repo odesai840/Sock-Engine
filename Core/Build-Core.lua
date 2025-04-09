@@ -8,6 +8,8 @@ project "Core"
     files {
         "Source/**.h",
         "Source/**.cpp",
+        "../Shaders/**.vert",
+        "../Shaders/**.frag"
     }
 
     includedirs {
@@ -17,7 +19,7 @@ project "Core"
     }
 
     libdirs {
-        "ThirdParty/Lib",
+        "ThirdParty/Lib"
     }
 
     links {
@@ -26,7 +28,7 @@ project "Core"
         "ImGui",
         "ThirdParty/Lib/glfw3.lib",
         "ThirdParty/Lib/SOIL2.lib",
-        "ThirdParty/Lib/assimp-vc143-mt.lib",
+        "ThirdParty/Lib/assimp-vc143-mt.lib"
     }
 
     targetdir ("../Binaries/" .. OutputDir .. "/%{prj.name}")

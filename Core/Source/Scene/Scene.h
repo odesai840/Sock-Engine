@@ -27,6 +27,9 @@ public:
     void AddModel(const std::string& filepath, const glm::vec3& position = glm::vec3(0.0f), 
                  const glm::vec3& scale = glm::vec3(1.0f));
 
+    // Scene info
+    std::string GetName() { return m_Name; }
+    
 private:
     std::string m_Name;
     Camera m_Camera;
@@ -50,8 +53,8 @@ private:
     std::vector<std::string> m_SkyboxFaces;
     bool m_HasSkybox = false;
 
-    Shader* m_ShadowMapShader;
-    Shader* m_LightingShader;
+    std::unique_ptr<Shader> m_ShadowMapShader;
+    std::unique_ptr<Shader> m_LightingShader;
 };
 
 }

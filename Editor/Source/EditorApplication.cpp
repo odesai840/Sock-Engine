@@ -8,8 +8,6 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <SOIL2/SOIL2.h>
 
-#include "imgui/imgui_internal.h"
-
 namespace SockEngine {
 
 EditorApplication::EditorApplication()
@@ -31,6 +29,9 @@ EditorApplication::EditorApplication()
         "../Assets/Textures/SkyboxDay/front.bmp",
         "../Assets/Textures/SkyboxDay/back.bmp"
     };
+    // Load skybox textures
+    m_Renderer->LoadSkybox(skyboxFaces);
+    // Set skybox texture paths for the scene
     m_ActiveScene->SetSkybox(skyboxFaces);
     
     // Add a model to the scene
@@ -140,10 +141,10 @@ void EditorApplication::OnImGuiRender() {
     
     // Draw editor windows
     DrawViewport();
-    DrawStatsPanel();
     DrawSceneHierarchy();
     DrawInspector();
     DrawDebugPanel();
+    DrawOutputLog();
 }
 
 void EditorApplication::DrawMenuBar() {
@@ -268,20 +269,11 @@ void EditorApplication::DrawViewport() {
     ImGui::End();
 }
 
-void EditorApplication::DrawStatsPanel() {
-    ImGui::Begin("Stats");
-    
-    ImGui::Text("FPS: %.1f", m_FPS);
-    ImGui::Text("Frame Time: %.3f ms", m_FrameTime);
-    
-    ImGui::End();
-}
-
 void EditorApplication::DrawSceneHierarchy() {
     ImGui::Begin("Scene Hierarchy");
     
     // In a full implementation, this would display a tree view of scene objects
-    if (ImGui::TreeNode("Scene")) {
+    if (ImGui::TreeNode(m_ActiveScene->GetName().c_str())) {
         ImGui::TreePop();
     }
     
@@ -299,6 +291,11 @@ void EditorApplication::DrawInspector() {
 
 void EditorApplication::DrawDebugPanel() {
     ImGui::Begin("Debug");
+
+    ImGui::Text("FPS: %.1f", m_FPS);
+    ImGui::Text("Frame Time: %.3f ms", m_FrameTime);
+    
+    ImGui::Separator();
     
     // Debug visualization options
     if (ImGui::CollapsingHeader("Debug Visualizations", ImGuiTreeNodeFlags_DefaultOpen))
@@ -308,6 +305,12 @@ void EditorApplication::DrawDebugPanel() {
     
         ImGui::Checkbox("Debug Specular", &m_DebugSpecular);
         if (m_DebugSpecular) m_DebugNormals = false;
+        
+        // Add skybox toggle
+        bool skyboxEnabled = m_Renderer->IsSkyboxEnabled();
+        if (ImGui::Checkbox("Enable Skybox", &skyboxEnabled)) {
+            m_Renderer->EnableSkybox(skyboxEnabled);
+        }
     }
     
     ImGui::Separator();
@@ -345,6 +348,12 @@ void EditorApplication::DrawDebugPanel() {
         ImGui::Text("Cursor Locked: %s", GetWindow().IsMouseCursorLocked() ? "Yes" : "No");
     }
     
+    ImGui::End();
+}
+
+void EditorApplication::DrawOutputLog() {
+    ImGui::Begin("Output Log");
+    // In a full implementation, this would display engine logs
     ImGui::End();
 }
 

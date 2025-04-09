@@ -4,11 +4,11 @@
 namespace SockEngine {
 
 enum class EventType {
-    None,
     WindowResize, WindowClose,
     KeyPressed, KeyReleased, KeyRepeat,
     MouseButtonPressed, MouseButtonReleased,
-    MouseMoved, MouseScrolled
+    MouseButtonRepeat, MouseMoved,
+    MouseScrolled
 };
 
 class Event {
@@ -135,6 +135,15 @@ public:
         : MouseButtonEvent(button) {}
 
     static EventType GetStaticType() { return EventType::MouseButtonReleased; }
+    EventType GetType() const override { return GetStaticType(); }
+};
+
+class MouseButtonRepeatEvent : public MouseButtonEvent {
+public:
+    MouseButtonRepeatEvent(int button)
+        : MouseButtonEvent(button) {}
+
+    static EventType GetStaticType() { return EventType::MouseButtonRepeat; }
     EventType GetType() const override { return GetStaticType(); }
 };
 

@@ -22,11 +22,15 @@ public:
     void EndScene();
     
     void RenderModel(Model& model, const glm::mat4& transform, Shader& shader);
-    void RenderSkybox(const std::vector<std::string>& skyboxFaces);
 
     void SetViewportSize(uint32_t width, uint32_t height);
     void EnableDebugNormals(bool enable) { m_DebugNormals = enable; }
     void EnableDebugSpecular(bool enable) { m_DebugSpecular = enable; }
+
+    // Skybox
+    void LoadSkybox(const std::vector<std::string>& skyboxFaces);
+    void EnableSkybox(bool enable) { m_EnableSkybox = enable; }
+    bool IsSkyboxEnabled() const { return m_EnableSkybox; }
     
     // Shadow mapping
     void SetupShadowMap(unsigned int width, unsigned int height);
@@ -67,7 +71,8 @@ private:
     // Skybox
     unsigned int m_SkyboxVAO, m_SkyboxVBO;
     unsigned int m_CubemapTexture;
-    Shader* m_SkyboxShader;
+    std::unique_ptr<Shader> m_SkyboxShader;
+    bool m_EnableSkybox = true;
     
     // Framebuffer
     unsigned int m_ViewportFBO; 

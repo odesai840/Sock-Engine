@@ -46,10 +46,10 @@ private:
     void DrawAboutWindow();
     void DrawMenuBar();
     void DrawViewport();
-    void DrawStatsPanel();
     void DrawSceneHierarchy();
     void DrawInspector();
     void DrawDebugPanel();
+    void DrawOutputLog();
 };
 
 }

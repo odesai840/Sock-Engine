@@ -6,14 +6,12 @@
 namespace SockEngine {
 
 Renderer::Renderer()
-    : m_ViewportWidth(1920), m_ViewportHeight(1080),
-      m_DirectionalLightDir(glm::vec3(-0.2f, -1.0f, -0.3f))
+    : m_DirectionalLightDir(glm::vec3(-0.2f, -1.0f, -0.3f))
 {
-    m_SkyboxShader = new Shader("../Shaders/Skybox.vert", "../Shaders/Skybox.frag");
+    m_SkyboxShader = std::make_unique<Shader>("../Shaders/Skybox.vert", "../Shaders/Skybox.frag");
 }
 
 Renderer::~Renderer() {
-    delete m_SkyboxShader;
 }
 
 void Renderer::Initialize(uint32_t viewportWidth, uint32_t viewportHeight) {
@@ -104,6 +102,7 @@ void Renderer::SetupSkybox() {
     glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glBindVertexArray(0);
 }
 
 void Renderer::CreateFramebuffer() {
@@ -224,7 +223,7 @@ void Renderer::BeginScene(Camera& camera) {
 
 void Renderer::EndScene() {
     // If not in debug mode, render skybox
-    if (!m_DebugNormals && !m_DebugSpecular) {
+    if (!m_DebugNormals && !m_DebugSpecular && m_EnableSkybox) {
         // Disable culling
         glDisable(GL_CULL_FACE);
         
@@ -283,7 +282,7 @@ void Renderer::RenderModel(Model& model, const glm::mat4& transform, Shader& sha
     model.Draw(shader);
 }
 
-void Renderer::RenderSkybox(const std::vector<std::string>& skyboxFaces) {
+void Renderer::LoadSkybox(const std::vector<std::string>& skyboxFaces) {
     if (m_CubemapTexture != 0) {
         glDeleteTextures(1, &m_CubemapTexture);
     }

@@ -6,13 +6,11 @@ namespace SockEngine {
 Scene::Scene(const std::string& name)
     : m_Name(name), m_Camera(glm::vec3(0.0f, 1.0f, 5.0f))
 {
-    m_ShadowMapShader = new Shader("../Shaders/ShadowMap.vert", "../Shaders/ShadowMap.frag");
-    m_LightingShader = new Shader("../Shaders/Lighting.vert", "../Shaders/Lighting.frag");
+    m_ShadowMapShader = std::make_unique<Shader>("../Shaders/ShadowMap.vert", "../Shaders/ShadowMap.frag");
+    m_LightingShader = std::make_unique<Shader>("../Shaders/Lighting.vert", "../Shaders/Lighting.frag");
 }
 
 Scene::~Scene() {
-    delete m_ShadowMapShader;
-    delete m_LightingShader;
 }
 
 void Scene::OnUpdate(float deltaTime) {
@@ -36,10 +34,6 @@ void Scene::Render(Renderer& renderer) {
     
     // Second render pass: main scene rendering
     renderer.BeginScene(m_Camera);
-    
-    if (m_HasSkybox) {
-        renderer.RenderSkybox(m_SkyboxFaces);
-    }
     
     m_LightingShader->use();
     m_LightingShader->setVec3("viewPos", m_Camera.Position);

@@ -49,12 +49,12 @@ void Window::Init(const std::string& title, uint32_t width, uint32_t height) {
 #endif
 
     // Set monitor info
-    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-    glfwWindowHint(GLFW_RED_BITS, mode->redBits);
-    glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
-    glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
-    glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+    //GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    //const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+    //glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+    //glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+    //glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+    //glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 
     // Create window
     m_Window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
@@ -65,8 +65,7 @@ void Window::Init(const std::string& title, uint32_t width, uint32_t height) {
 
     glfwMakeContextCurrent(m_Window);
     glfwMaximizeWindow(m_Window);
-    glfwSwapInterval(1); // Enable vsync
-    m_Data.VSync = true;
+    SetVSync(true);
 
     // Set window icon
     GLFWimage images[1];
@@ -78,12 +77,12 @@ void Window::Init(const std::string& title, uint32_t width, uint32_t height) {
     glfwSetWindowUserPointer(m_Window, &m_Data);
 
     // Window resize callback
-    glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int width, int height) {
+    glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int newWidth, int newHeight) {
         WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
-        data.Width = width;
-        data.Height = height;
+        data.Width = newWidth;
+        data.Height = newHeight;
 
-        WindowResizeEvent event(width, height);
+        WindowResizeEvent event(newWidth, newHeight);
         data.EventCallback(&event);
     });
 
@@ -137,6 +136,10 @@ void Window::Init(const std::string& title, uint32_t width, uint32_t height) {
                 data.EventCallback(&event);
                 break;
             }
+            case GLFW_REPEAT:
+                MouseButtonRepeatEvent event(button);
+                data.EventCallback(&event);
+                break;
         }
     });
 

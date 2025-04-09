@@ -321,12 +321,6 @@ void EditorApplication::DrawDebugPanel() {
     if (ImGui::CollapsingHeader("Camera Settings", ImGuiTreeNodeFlags_DefaultOpen))
     {
         ImGui::SliderFloat("Movement Speed", &camera.MovementSpeed, 100.0f, 8000.0f, "%.1f");
-    
-        // Camera smoothing controls
-        ImGui::Checkbox("Enable Camera Smoothing", &camera.EnableSmoothing);
-        if (camera.EnableSmoothing) {
-            ImGui::SliderFloat("Smoothing Factor", &camera.SmoothingFactor, 0.1f, 1.0f, "%.2f");
-        }
     }
 
     ImGui::Separator();

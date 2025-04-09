@@ -40,10 +40,6 @@ public:
     float MovementSpeed;
     float MouseSensitivity;
     float Zoom;
-    
-    // Smoothing options
-    bool EnableSmoothing = true;
-    float SmoothingFactor = 0.2f;
 
     // constructor with vectors
     Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH);

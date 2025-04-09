@@ -87,10 +87,8 @@ void Camera::ProcessMouseMovement(float xoffset, float yoffset, GLboolean constr
     xoffset *= MouseSensitivity;
     yoffset *= MouseSensitivity;
     
-    // Apply smoothing if enabled
-    if (EnableSmoothing) {
-        applySmoothing(xoffset, yoffset);
-    }
+    // Apply smoothing
+    applySmoothing(xoffset, yoffset);
 
     Yaw += xoffset;
     Pitch += yoffset;

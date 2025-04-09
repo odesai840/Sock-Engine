@@ -32,7 +32,8 @@ project "Editor"
     {
         "{COPYDIR} %{wks.location}Assets ../Binaries/" .. OutputDir .. "/Assets",
         "{COPYDIR} %{wks.location}Shaders ../Binaries/" .. OutputDir .. "/Shaders",
-        "{COPYFILE} %{wks.location}Vendor/Binaries/Assimp/assimp-vc143-mt.dll %{cfg.targetdir}"
+        "{COPYFILE} %{wks.location}Vendor/Binaries/Assimp/assimp-vc143-mt.dll %{cfg.targetdir}",
+        "{COPYFILE} imgui.ini %{cfg.targetdir}"
     }
 
     filter "system:windows"

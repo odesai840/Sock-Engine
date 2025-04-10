@@ -1,4 +1,5 @@
 #include "Camera.h"
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace SockEngine {
 
@@ -9,7 +10,7 @@ Camera::Camera(glm::vec3 position, glm::vec3 up, float yaw, float pitch)
     WorldUp = up;
     Yaw = yaw;
     Pitch = pitch;
-    updateCameraVectors();
+    UpdateCameraVectors();
 }
 
 Camera::Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch)
@@ -19,7 +20,7 @@ Camera::Camera(float posX, float posY, float posZ, float upX, float upY, float u
     WorldUp = glm::vec3(upX, upY, upZ);
     Yaw = yaw;
     Pitch = pitch;
-    updateCameraVectors();
+    UpdateCameraVectors();
 }
 
 // returns the view matrix calculated using Euler Angles and the LookAt Matrix
@@ -47,7 +48,7 @@ void Camera::ProcessKeyboard(Camera_Movement direction, float deltaTime)
 }
 
 // Apply smoothing to rotation values
-void Camera::applySmoothing(float& yawOffset, float& pitchOffset) {
+void Camera::ApplySmoothing(float& yawOffset, float& pitchOffset) {
     // Initialize buffers if they're empty
     if (yawBuffer.size() == 0) {
         yawBuffer.assign(bufferSize, 0.0f);
@@ -88,7 +89,7 @@ void Camera::ProcessMouseMovement(float xoffset, float yoffset, GLboolean constr
     yoffset *= MouseSensitivity;
     
     // Apply smoothing
-    applySmoothing(xoffset, yoffset);
+    ApplySmoothing(xoffset, yoffset);
 
     Yaw += xoffset;
     Pitch += yoffset;
@@ -105,7 +106,7 @@ void Camera::ProcessMouseMovement(float xoffset, float yoffset, GLboolean constr
     }
 
     // update Front, Right and Up Vectors using the updated Euler angles
-    updateCameraVectors();
+    UpdateCameraVectors();
 }
 
 // processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
@@ -120,7 +121,7 @@ void Camera::ProcessMouseScroll(float yoffset)
     }
 }
 
-void Camera::updateCameraVectors()
+void Camera::UpdateCameraVectors()
 {
     // calculate the new Front vector
     glm::vec3 front;

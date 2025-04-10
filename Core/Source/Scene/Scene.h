@@ -1,12 +1,12 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include <vector>
-#include <string>
-#include <memory>
 #include "Resources/Model.h"
 #include "Camera/Camera.h"
 #include "Renderer/Renderer.h"
+#include <vector>
+#include <string>
+#include <memory>
 
 namespace SockEngine {
 

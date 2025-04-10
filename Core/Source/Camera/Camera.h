@@ -1,10 +1,9 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#include <vector>
 #include <glad/gl.h>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <vector>
 
 namespace SockEngine {
 
@@ -66,10 +65,10 @@ private:
     const int bufferSize = 5;
     
     // calculates the front vector from the Camera's (updated) Euler Angles
-    void updateCameraVectors();
+    void UpdateCameraVectors();
     
     // Applies smoothing to rotation
-    void applySmoothing(float& yawOffset, float& pitchOffset);
+    void ApplySmoothing(float& yawOffset, float& pitchOffset);
 };
 
 }

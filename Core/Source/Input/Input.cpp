@@ -1,4 +1,3 @@
-// Input.cpp
 #include "Input.h"
 
 namespace SockEngine {

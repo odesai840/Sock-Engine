@@ -21,10 +21,6 @@ public:
     bool IsRunning() const { return m_Running; }
     void Close() { m_Running = false; }
 
-    // Performance metrics
-    int GetFPS() const;
-    float GetFrameTimeMS() const;
-
     static Application& Get() { return *s_Instance; }
 
 protected:

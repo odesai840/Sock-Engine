@@ -1,10 +1,10 @@
 #include "Application.h"
 #include "Events.h"
+#include <iostream>
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
 #include <GLFW/glfw3.h>
-#include <iostream>
 
 namespace SockEngine {
 
@@ -59,6 +59,12 @@ Application::Application(const std::string& name) {
             {
                 MouseButtonReleasedEvent* mouseEvent = static_cast<MouseButtonReleasedEvent*>(e);
                 m_Input.UpdateMouseButtonState(mouseEvent->GetMouseButton(), GLFW_RELEASE);
+                break;
+            }
+            case EventType::MouseButtonRepeat:
+            {
+                MouseButtonRepeatEvent* mouseEvent = static_cast<MouseButtonRepeatEvent*>(e);
+                m_Input.UpdateMouseButtonState(mouseEvent->GetMouseButton(), GLFW_REPEAT);
                 break;
             }
             case EventType::MouseMoved:

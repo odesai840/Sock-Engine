@@ -1,7 +1,9 @@
 #include "Renderer.h"
+#include <iostream>
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
+#include <SOIL2/SOIL2.h>
 
 namespace SockEngine {
 
@@ -229,10 +231,10 @@ void Renderer::EndScene() {
         
         // Draw skybox
         glDepthFunc(GL_LEQUAL); // Change depth function so depth test passes when values are equal to depth buffer's content
-        m_SkyboxShader->use();
+        m_SkyboxShader->Use();
         glm::mat4 view = glm::mat4(glm::mat3(m_ViewMatrix)); // Remove translation from the view matrix
-        m_SkyboxShader->setMat4("view", view);
-        m_SkyboxShader->setMat4("projection", m_ProjectionMatrix);
+        m_SkyboxShader->SetMat4("view", view);
+        m_SkyboxShader->SetMat4("projection", m_ProjectionMatrix);
         
         // Skybox cube
         glBindVertexArray(m_SkyboxVAO);
@@ -250,33 +252,33 @@ void Renderer::EndScene() {
 }
 
 void Renderer::RenderModel(Model& model, const glm::mat4& transform, Shader& shader) {
-    shader.use();
+    shader.Use();
     
     // Set common uniforms
-    shader.setBool("debugNormals", m_DebugNormals);
-    shader.setBool("debugSpec", m_DebugSpecular);
+    shader.SetBool("debugNormals", m_DebugNormals);
+    shader.SetBool("debugSpec", m_DebugSpecular);
     
     // Set lighting parameters
-    shader.setVec3("dirLight.direction", m_DirectionalLightDir);
-    shader.setVec3("dirLight.ambient", 0.1f, 0.1f, 0.1f);
-    shader.setVec3("dirLight.diffuse", 1.0f, 1.0f, 1.0f);
-    shader.setVec3("dirLight.specular", 0.3f, 0.3f, 0.3f);
+    shader.SetVec3("dirLight.direction", m_DirectionalLightDir);
+    shader.SetVec3("dirLight.ambient", 0.1f, 0.1f, 0.1f);
+    shader.SetVec3("dirLight.diffuse", 1.0f, 1.0f, 1.0f);
+    shader.SetVec3("dirLight.specular", 0.3f, 0.3f, 0.3f);
     
     // Set shadow mapping uniforms
-    shader.setMat4("lightSpaceMatrix", m_LightSpaceMatrix);
-    shader.setFloat("shadowBias", m_ShadowBias);
+    shader.SetMat4("lightSpaceMatrix", m_LightSpaceMatrix);
+    shader.SetFloat("shadowBias", m_ShadowBias);
     
     // Bind shadow map
     glActiveTexture(GL_TEXTURE0 + 5);
     glBindTexture(GL_TEXTURE_2D, m_DepthMap);
-    shader.setInt("shadowMap", 5);
+    shader.SetInt("shadowMap", 5);
     
     // Set view/projection matrices
-    shader.setMat4("projection", m_ProjectionMatrix);
-    shader.setMat4("view", m_ViewMatrix);
+    shader.SetMat4("projection", m_ProjectionMatrix);
+    shader.SetMat4("view", m_ViewMatrix);
     
     // Set model transform
-    shader.setMat4("model", transform);
+    shader.SetMat4("model", transform);
     
     // Draw the model
     model.Draw(shader);
@@ -286,13 +288,56 @@ void Renderer::LoadSkybox(const std::vector<std::string>& skyboxFaces) {
     if (m_CubemapTexture != 0) {
         glDeleteTextures(1, &m_CubemapTexture);
     }
-    m_CubemapTexture = Model::loadCubemap(skyboxFaces);
+    m_CubemapTexture = LoadCubemap(skyboxFaces);
 }
 
 void Renderer::SetViewportSize(uint32_t width, uint32_t height) {
     m_ViewportWidth = width;
     m_ViewportHeight = height;
     RescaleFramebuffer(width, height);
+}
+
+unsigned int Renderer::LoadCubemap(std::vector<std::string> faces) {
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+    int width, height, nrComponents;
+    for (unsigned int i = 0; i < faces.size(); i++)
+    {
+        unsigned char* data = SOIL_load_image(faces[i].c_str(), &width, &height, &nrComponents, 0);
+        GLenum format = GL_RGB;
+        if (data)
+        {
+            if (nrComponents == 1) {
+                format = GL_RED;
+            }
+            else if (nrComponents == 2) {
+                format = GL_RG;
+            }
+            else if (nrComponents == 3) {
+                format = GL_RGB;
+            }
+            else if (nrComponents == 4) {
+                format = GL_RGBA;
+            }
+            
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+            SOIL_free_image_data(data);
+        }
+        else
+        {
+            std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
+        }
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+
+    return textureID;
 }
 
 }

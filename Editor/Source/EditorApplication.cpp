@@ -1,5 +1,4 @@
 #include "EditorApplication.h"
-
 #include <iostream>
 #include <imgui/imgui.h>
 #include <glad/gl.h>
@@ -33,6 +32,7 @@ EditorApplication::EditorApplication()
     m_Renderer->LoadSkybox(skyboxFaces);
     // Set skybox texture paths for the scene
     m_ActiveScene->SetSkybox(skyboxFaces);
+    m_SkyboxEnabled = m_Renderer->IsSkyboxEnabled();
     
     // Add a model to the scene
     m_ActiveScene->AddModel("../Assets/Models/sponza/sponza.obj");
@@ -197,8 +197,7 @@ void EditorApplication::ShowAboutWindow() {
     m_ShowAboutWindow = true;
 }
 
-void EditorApplication::DrawAboutWindow()
-{
+void EditorApplication::DrawAboutWindow() {
     // Calculate center position for the window
     ImVec2 center = ImVec2(ImGui::GetIO().DisplaySize.x / 2.0f, ImGui::GetIO().DisplaySize.y / 2.0f);
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
@@ -291,25 +290,34 @@ void EditorApplication::DrawInspector() {
 
 void EditorApplication::DrawDebugPanel() {
     ImGui::Begin("Debug");
-
+    
     ImGui::Text("FPS: %.1f", m_FPS);
     ImGui::Text("Frame Time: %.3f ms", m_FrameTime);
+    
+    ImGui::Spacing();
+    
+    // VSync
+    bool enabled = m_Window->IsVSync();
+    if (ImGui::Checkbox("VSync", &enabled)) {
+        m_Window->SetVSync(enabled);
+    }
     
     ImGui::Separator();
     
     // Debug visualization options
-    if (ImGui::CollapsingHeader("Debug Visualizations", ImGuiTreeNodeFlags_DefaultOpen))
-    {
+    if (ImGui::CollapsingHeader("Debug Visualizations", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::Checkbox("Debug Normals", &m_DebugNormals);
-        if (m_DebugNormals) m_DebugSpecular = false;
+        if (m_DebugNormals) {
+            m_DebugSpecular = false;
+        }
     
         ImGui::Checkbox("Debug Specular", &m_DebugSpecular);
-        if (m_DebugSpecular) m_DebugNormals = false;
+        if (m_DebugSpecular) {
+            m_DebugNormals = false;
+        }
         
-        // Add skybox toggle
-        bool skyboxEnabled = m_Renderer->IsSkyboxEnabled();
-        if (ImGui::Checkbox("Enable Skybox", &skyboxEnabled)) {
-            m_Renderer->EnableSkybox(skyboxEnabled);
+        if (ImGui::Checkbox("Enable Skybox", &m_SkyboxEnabled)) {
+            m_Renderer->EnableSkybox(m_SkyboxEnabled);
         }
     }
     
@@ -318,16 +326,14 @@ void EditorApplication::DrawDebugPanel() {
     // Camera settings
     Camera& camera = m_ActiveScene->GetCamera();
     
-    if (ImGui::CollapsingHeader("Camera Settings", ImGuiTreeNodeFlags_DefaultOpen))
-    {
+    if (ImGui::CollapsingHeader("Camera Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::SliderFloat("Movement Speed", &camera.MovementSpeed, 100.0f, 8000.0f, "%.1f");
     }
 
     ImGui::Separator();
     
     // Input debug info
-    if (ImGui::CollapsingHeader("Input Debug", ImGuiTreeNodeFlags_DefaultOpen))
-    {
+    if (ImGui::CollapsingHeader("Input Debug", ImGuiTreeNodeFlags_DefaultOpen)) {
         // Mouse position and delta
         glm::vec2 mousePos = m_Input.GetMousePosition();
         glm::vec2 mouseDelta = m_Input.GetMouseDelta();

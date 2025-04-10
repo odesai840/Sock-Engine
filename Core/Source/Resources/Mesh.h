@@ -1,11 +1,11 @@
 #ifndef MESH_H
 #define MESH_H
 
+#include "Shader.h"
 #include <string>
 #include <vector>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "Shader.h"
 
 #define MAX_BONE_INFLUENCE 4
 
@@ -53,7 +53,7 @@ private:
     unsigned int VBO, EBO;
 
     // initializes all the buffer objects/arrays
-    void setupMesh();
+    void SetupMesh();
 };
 
 }

@@ -10,7 +10,7 @@ Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std:
     this->textures = textures;
 
     // now that we have all the required data, set the vertex buffers and its attribute pointers.
-    setupMesh();
+    SetupMesh();
 }
 
 // render the mesh
@@ -41,7 +41,7 @@ void Mesh::Draw(Shader& shader)
         }
 
         // now set the sampler to the correct texture unit
-        shader.setInt(("material." + name + number).c_str(), i);
+        shader.SetInt(("material." + name + number).c_str(), i);
         // and finally bind the texture
         glBindTexture(GL_TEXTURE_2D, textures[i].id);
     }
@@ -55,7 +55,7 @@ void Mesh::Draw(Shader& shader)
     glActiveTexture(GL_TEXTURE0);
 }
 
-void Mesh::setupMesh()
+void Mesh::SetupMesh()
 {
     // create buffers/arrays
     glGenVertexArrays(1, &VAO);

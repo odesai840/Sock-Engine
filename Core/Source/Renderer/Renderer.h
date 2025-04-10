@@ -1,12 +1,13 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-#include <glm/glm.hpp>
-#include <vector>
-#include <string>
 #include "Resources/Shader.h"
 #include "Resources/Model.h"
 #include "Camera/Camera.h"
+#include <vector>
+#include <string>
+#include <memory>
+#include <glm/glm.hpp>
 
 namespace SockEngine {
 
@@ -31,6 +32,7 @@ public:
     void LoadSkybox(const std::vector<std::string>& skyboxFaces);
     void EnableSkybox(bool enable) { m_EnableSkybox = enable; }
     bool IsSkyboxEnabled() const { return m_EnableSkybox; }
+    static unsigned int LoadCubemap(std::vector<std::string> faces);
     
     // Shadow mapping
     void SetupShadowMap(unsigned int width, unsigned int height);

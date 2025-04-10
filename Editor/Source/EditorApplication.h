@@ -28,6 +28,7 @@ private:
     // Editor debug options
     bool m_DebugNormals = false;
     bool m_DebugSpecular = false;
+    bool m_SkyboxEnabled = false;
 
     // Menu bar
     struct MenuItem {

@@ -21,12 +21,12 @@ void Scene::Render(Renderer& renderer) {
     // First render pass: shadow mapping
     renderer.BeginShadowPass(glm::vec3(-0.2f, -1.0f, -0.3f), 50000.0f);
     
-    m_ShadowMapShader->use();
-    m_ShadowMapShader->setMat4("lightSpaceMatrix", renderer.GetLightSpaceMatrix());
+    m_ShadowMapShader->Use();
+    m_ShadowMapShader->SetMat4("lightSpaceMatrix", renderer.GetLightSpaceMatrix());
     
     for (const auto& object : m_Objects) {
         // Do a simplified render pass just for shadow mapping
-        m_ShadowMapShader->setMat4("model", object.GetTransform());
+        m_ShadowMapShader->SetMat4("model", object.GetTransform());
         object.model->Draw(*m_ShadowMapShader);
     }
     
@@ -35,9 +35,9 @@ void Scene::Render(Renderer& renderer) {
     // Second render pass: main scene rendering
     renderer.BeginScene(m_Camera);
     
-    m_LightingShader->use();
-    m_LightingShader->setVec3("viewPos", m_Camera.Position);
-    m_LightingShader->setFloat("material.shininess", 32.0f);
+    m_LightingShader->Use();
+    m_LightingShader->SetVec3("viewPos", m_Camera.Position);
+    m_LightingShader->SetFloat("material.shininess", 32.0f);
     
     for (const auto& object : m_Objects) {
         renderer.RenderModel(*object.model, object.GetTransform(), *m_LightingShader);

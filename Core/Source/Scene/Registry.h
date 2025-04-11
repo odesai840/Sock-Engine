@@ -24,6 +24,7 @@ public:
     // Name management
     void SetName(entt::entity entity, const std::string& name);
     const std::string& GetName(entt::entity entity) const;
+    std::string MakeNameUnique(const std::string& desiredName, entt::entity entityToExclude = entt::null);
 
     // Utility functions
     entt::entity FindEntityByName(const std::string& name) const;

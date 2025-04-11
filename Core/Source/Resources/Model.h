@@ -4,7 +4,6 @@
 #include "Mesh.h"
 #include "Shader.h"
 #include <string>
-#include <sstream>
 #include <vector>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>

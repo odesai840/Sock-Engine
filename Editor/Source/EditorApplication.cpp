@@ -419,7 +419,7 @@ void EditorApplication::DrawInspector() {
     
     // Entity name and active state
     char nameBuffer[256];
-    strcpy(nameBuffer, selectedEntity.GetName().c_str());
+    strcpy_s(nameBuffer, selectedEntity.GetName().c_str());
     if (ImGui::InputText("Name", nameBuffer, sizeof(nameBuffer))) {
         selectedEntity.SetName(nameBuffer);
     }

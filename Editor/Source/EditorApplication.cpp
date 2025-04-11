@@ -1,5 +1,4 @@
 #include "EditorApplication.h"
-#include <iostream>
 #include <imgui/imgui.h>
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
@@ -35,7 +34,7 @@ EditorApplication::EditorApplication()
     m_SkyboxEnabled = m_Renderer->IsSkyboxEnabled();
     
     // Add a model to the scene
-    m_ActiveScene->AddModel("../Assets/Models/sponza/sponza.obj");
+    m_ActiveScene->LoadModel("../Assets/Models/sponza/sponza.obj");
 }
 
 EditorApplication::~EditorApplication() {
@@ -270,22 +269,304 @@ void EditorApplication::DrawViewport() {
 
 void EditorApplication::DrawSceneHierarchy() {
     ImGui::Begin("Scene Hierarchy");
+
+    ImGui::Text("Scene Root (%s)", m_ActiveScene->GetName().c_str());
     
-    // In a full implementation, this would display a tree view of scene objects
-    if (ImGui::TreeNode(m_ActiveScene->GetName().c_str())) {
-        ImGui::TreePop();
+    // Draw all root entities and their children
+    for (auto entity : m_ActiveScene->GetRootEntities()) {
+        DrawEntityNode(entity);
+    }
+
+    if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && 
+        !ImGui::IsAnyItemHovered())
+    {
+        m_ActiveScene->SetSelectedEntity(Entity());
+    }
+
+    // Right-click on empty space in the window
+    if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right) && 
+        !ImGui::IsAnyItemHovered())
+    {
+        ImGui::OpenPopup("SceneHierarchyContextMenu");
+    }
+    
+    if (ImGui::BeginPopup("SceneHierarchyContextMenu")) {
+        if (ImGui::MenuItem("Create Empty Object")) {
+            Entity entity = m_ActiveScene->CreateEntity("Empty Object");
+            m_ActiveScene->SetSelectedEntity(entity);
+        }
+        ImGui::EndPopup();
+    }
+    
+    // Handle scheduled entity deletion
+    if (m_EntityToDelete) {
+        m_ActiveScene->DestroyEntity(m_EntityToDelete);
+        m_EntityToDelete = Entity();
     }
     
     ImGui::End();
 }
 
+void EditorApplication::DrawEntityNode(Entity entity) {
+    if (!entity) {
+        return;
+    }
+    
+    // Create unique identifiers for this entity
+    std::string nodeId = "Entity_" + std::to_string(static_cast<uint32_t>(static_cast<entt::entity>(entity)));
+    std::string popupId = "ContextMenu_" + std::to_string(static_cast<uint32_t>(static_cast<entt::entity>(entity)));
+    
+    // Set up tree node flags
+    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+    
+    // Add selected flag if this entity is selected
+    if (entity == m_ActiveScene->GetSelectedEntity()) {
+        flags |= ImGuiTreeNodeFlags_Selected;
+    }
+    
+    // If no children, make it a leaf node
+    bool hasChildren = entity.HasComponent<RelationshipComponent>() && 
+                       !entity.GetComponent<RelationshipComponent>().children.empty();
+                       
+    if (!hasChildren) {
+        flags |= ImGuiTreeNodeFlags_Leaf;
+    }
+    
+    // Begin the tree node
+    bool opened = ImGui::TreeNodeEx(nodeId.c_str(), flags, "%s", entity.GetName().c_str());
+    
+    // Handle selection when clicked
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+        m_ActiveScene->SetSelectedEntity(entity);
+    }
+    
+    // Explicitly check for right-click on the item to open the popup
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
+        ImGui::OpenPopup(popupId.c_str());
+    }
+    
+    // Draw the context menu
+    if (ImGui::BeginPopup(popupId.c_str())) {
+        if (ImGui::MenuItem("Create Empty Child")) {
+            Entity childEntity = m_ActiveScene->CreateEntity("Empty Object");
+            m_ActiveScene->UpdateRelationship(childEntity, entity);
+            m_ActiveScene->SetSelectedEntity(childEntity);
+            ImGui::SetNextItemOpen(true);
+        }
+        
+        if (ImGui::MenuItem("Duplicate")) {
+            Entity duplicate = m_ActiveScene->DuplicateEntity(entity);
+            if (duplicate) {
+                m_ActiveScene->SetSelectedEntity(duplicate);
+            }
+        }
+        
+        ImGui::Separator();
+        
+        if (ImGui::MenuItem("Delete Object")) {
+            m_EntityToDelete = entity;
+            ImGui::CloseCurrentPopup();
+        }
+        
+        ImGui::EndPopup();
+    }
+    
+    // Handle drag-drop for reparenting
+    if (ImGui::BeginDragDropSource()) {
+        ImGui::SetDragDropPayload("ENTITY", &entity, sizeof(Entity));
+        ImGui::Text("Moving %s", entity.GetName().c_str());
+        ImGui::EndDragDropSource();
+    }
+    
+    if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ENTITY")) {
+            Entity* droppedEntity = (Entity*)payload->Data;
+            if (*droppedEntity != entity && *droppedEntity) {
+                m_ActiveScene->UpdateRelationship(*droppedEntity, entity);
+            }
+        }
+        ImGui::EndDragDropTarget();
+    }
+    
+    // Draw children if the node is open
+    if (opened) {
+        if (entity.HasComponent<RelationshipComponent>()) {
+            auto& relationship = entity.GetComponent<RelationshipComponent>();
+            
+            for (auto childHandle : relationship.children) {
+                Entity childEntity(childHandle, &m_ActiveScene->GetRegistry());
+                if (childEntity) {
+                    DrawEntityNode(childEntity);
+                }
+            }
+        }
+        ImGui::TreePop();
+    }
+}
+
 void EditorApplication::DrawInspector() {
     ImGui::Begin("Inspector");
     
-    // In a full implementation, this would display properties of the selected object
-    ImGui::Text("No object selected");
+    Entity selectedEntity = m_ActiveScene->GetSelectedEntity();
+    if (!selectedEntity) {
+        ImGui::Text("No object selected");
+        ImGui::End();
+        return;
+    }
+    
+    auto& registry = m_ActiveScene->GetRegistry().GetRegistry();
+    auto entityHandle = static_cast<entt::entity>(selectedEntity);
+    
+    // Entity name and active state
+    char nameBuffer[256];
+    strcpy(nameBuffer, selectedEntity.GetName().c_str());
+    if (ImGui::InputText("Name", nameBuffer, sizeof(nameBuffer))) {
+        selectedEntity.SetName(nameBuffer);
+    }
+    
+    bool isActive = registry.all_of<ActiveComponent>(entityHandle) ? 
+                    registry.get<ActiveComponent>(entityHandle).active : true;
+                    
+    if (ImGui::Checkbox("Active", &isActive)) {
+        if (registry.all_of<ActiveComponent>(entityHandle)) {
+            registry.get<ActiveComponent>(entityHandle).active = isActive;
+        }
+    }
+    
+    ImGui::Separator();
+    
+    // Display existing components
+    DrawComponents(selectedEntity);
+
+    ImGui::Separator();
+    
+    // Add component button
+    if (ImGui::Button("Add Component")) {
+        ImGui::OpenPopup("AddComponentPopup");
+    }
+    
+    if (ImGui::BeginPopup("AddComponentPopup")) {
+        DrawAddComponentPopup(selectedEntity);
+        ImGui::EndPopup();
+    }
     
     ImGui::End();
+}
+
+void EditorApplication::DrawComponents(Entity entity) {
+    if (!entity) return;
+    
+    auto& registry = m_ActiveScene->GetRegistry().GetRegistry();
+    auto entityHandle = static_cast<entt::entity>(entity);
+    
+    // Draw Transform component (always present)
+    if (registry.all_of<TransformComponent>(entityHandle)) {
+        auto& transform = registry.get<TransformComponent>(entityHandle);
+        DrawTransformComponent(transform, entity);
+    }
+    
+    // Draw Model component if present
+    if (registry.all_of<ModelComponent>(entityHandle)) {
+        auto& model = registry.get<ModelComponent>(entityHandle);
+        DrawModelComponent(model, entity);
+    }
+}
+
+void EditorApplication::DrawTransformComponent(const TransformComponent& transform, Entity entity) {
+    if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
+        auto& registry = m_ActiveScene->GetRegistry().GetRegistry();
+        auto entityHandle = static_cast<entt::entity>(entity);
+        auto& transformComponent = registry.get<TransformComponent>(entityHandle);
+        
+        // Position
+        glm::vec3 position = transformComponent.localPosition;
+        if (ImGui::DragFloat3("Position", glm::value_ptr(position), 0.1f)) {
+            transformComponent.localPosition = position;
+            transformComponent.localMatrixDirty = true;
+            transformComponent.worldMatrixDirty = true;
+        }
+        
+        // Rotation
+        glm::vec3 editorRotation = transformComponent.localRotationDegrees;
+        if (ImGui::DragFloat3("Rotation", glm::value_ptr(editorRotation), 0.1f)) {
+            transformComponent.localRotationDegrees = editorRotation;
+            
+            // Convert the editor rotation to a quaternion
+            glm::quat quatX = glm::angleAxis(glm::radians(editorRotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+            glm::quat quatY = glm::angleAxis(glm::radians(editorRotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+            glm::quat quatZ = glm::angleAxis(glm::radians(editorRotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+            
+            // Combined rotation (order: Z then Y then X)
+            transformComponent.localRotation = quatX * quatY * quatZ;
+            transformComponent.localRotation = glm::normalize(transformComponent.localRotation);
+            
+            transformComponent.localMatrixDirty = true;
+            transformComponent.worldMatrixDirty = true;
+        }
+        
+        // Scale
+        glm::vec3 scale = transformComponent.localScale;
+        if (ImGui::DragFloat3("Scale", glm::value_ptr(scale), 0.1f)) {
+            transformComponent.localScale = scale;
+            transformComponent.localMatrixDirty = true;
+            transformComponent.worldMatrixDirty = true;
+        }
+    }
+}
+
+void EditorApplication::DrawModelComponent(const ModelComponent& component, Entity entity) {
+    if (ImGui::CollapsingHeader("Model", ImGuiTreeNodeFlags_DefaultOpen)) {
+        auto& registry = m_ActiveScene->GetRegistry().GetRegistry();
+        auto entityHandle = static_cast<entt::entity>(entity);
+        auto& modelComponent = registry.get<ModelComponent>(entityHandle);
+        
+        // Display model path
+        ImGui::Text("Model: %s", modelComponent.modelPath.c_str());
+        
+        // Rendering options
+        bool castShadows = modelComponent.castShadows;
+        if (ImGui::Checkbox("Cast Shadows", &castShadows)) {
+            modelComponent.castShadows = castShadows;
+        }
+        
+        bool receiveShadows = modelComponent.receiveShadows;
+        if (ImGui::Checkbox("Receive Shadows", &receiveShadows)) {
+            modelComponent.receiveShadows = receiveShadows;
+        }
+        
+        // Load model button
+        if (ImGui::Button("Load Model")) {
+            // In a full implementation, this would open a file dialog
+            ImGui::OpenPopup("ModelLoadNotSupported");
+        }
+        
+        if (ImGui::BeginPopup("ModelLoadNotSupported")) {
+            ImGui::Text("Sorry, not implemented yet :(");
+            if (ImGui::Button("Close")) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+    }
+}
+
+void EditorApplication::DrawAddComponentPopup(Entity entity) {
+    if (!entity) {
+        return;
+    }
+    
+    auto& registry = m_ActiveScene->GetRegistry().GetRegistry();
+    auto entityHandle = static_cast<entt::entity>(entity);
+    
+    if (ImGui::MenuItem("Model")) {
+        if (!registry.all_of<ModelComponent>(entityHandle)) {
+            auto& model = registry.emplace<ModelComponent>(entityHandle);
+            ImGui::CloseCurrentPopup();
+        }
+        else {
+            ImGui::CloseCurrentPopup();
+        }
+    }
 }
 
 void EditorApplication::DrawDebugPanel() {

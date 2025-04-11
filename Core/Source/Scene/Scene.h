@@ -1,7 +1,8 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include "Resources/Model.h"
+#include "Registry.h"
+#include "Entity.h"
 #include "Camera/Camera.h"
 #include "Renderer/Renderer.h"
 #include <vector>
@@ -18,43 +19,59 @@ public:
     void OnUpdate(float deltaTime);
     void Render(Renderer& renderer);
 
+    // Scene configuration
     void SetSkybox(const std::vector<std::string>& skyboxFaces);
-    
+
     // Camera access
-    Camera& GetCamera() { return m_Camera; }
-    
-    // Scene manipulation
-    void AddModel(const std::string& filepath, const glm::vec3& position = glm::vec3(0.0f), 
-                 const glm::vec3& scale = glm::vec3(1.0f));
+    Camera& GetCamera() { return m_EditorCamera; }
+
+    // Entity management
+    Entity CreateEntity(const std::string& name);
+    Entity DuplicateEntity(Entity entity);
+    void DestroyEntity(Entity entity);
+
+    // Model loading
+    Entity LoadModel(const std::string& filepath, const glm::vec3& position = glm::vec3(0.0f), 
+                     const glm::vec3& scale = glm::vec3(1.0f));
+
+    // Entity queries
+    Entity FindEntityByName(const std::string& name);
+    std::vector<Entity> GetRootEntities();
 
     // Scene info
-    std::string GetName() { return m_Name; }
-    
+    const std::string& GetName() const { return m_Name; }
+    void SetName(const std::string& name) { m_Name = name; }
+
+    // Registry access
+    Registry& GetRegistry() { return m_Registry; }
+
+    // Selection support for editor
+    void SetSelectedEntity(Entity entity) { m_SelectedEntity = entity; }
+    Entity GetSelectedEntity() const { return m_SelectedEntity; }
+
+    // Hierarchy management
+    void UpdateRelationship(Entity child, Entity parent);
+
 private:
     std::string m_Name;
-    Camera m_Camera;
-    
-    struct SceneObject {
-        std::unique_ptr<Model> model;
-        glm::vec3 position;
-        glm::vec3 rotation;
-        glm::vec3 scale;
-        
-        glm::mat4 GetTransform() const {
-            glm::mat4 transform = glm::mat4(1.0f);
-            transform = glm::translate(transform, position);
-            // Apply rotation (would need to handle properly in a full implementation)
-            transform = glm::scale(transform, scale);
-            return transform;
-        }
-    };
-    
-    std::vector<SceneObject> m_Objects;
+    Camera m_EditorCamera;
+
+    // Entity registry
+    Registry m_Registry;
+
+    // Skybox
     std::vector<std::string> m_SkyboxFaces;
     bool m_HasSkybox = false;
 
+    // Shaders
     std::unique_ptr<Shader> m_ShadowMapShader;
     std::unique_ptr<Shader> m_LightingShader;
+
+    // Editor state
+    Entity m_SelectedEntity;
+
+    // Hierarchy management
+    Entity DuplicateEntityHierarchy(Entity entity, Entity parent);
 };
 
 }

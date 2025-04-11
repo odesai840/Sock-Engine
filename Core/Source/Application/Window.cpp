@@ -49,12 +49,12 @@ void Window::Init(const std::string& title, uint32_t width, uint32_t height) {
 #endif
 
     // Set monitor info
-    //GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-    //const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-    //glfwWindowHint(GLFW_RED_BITS, mode->redBits);
-    //glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
-    //glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
-    //glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+    glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+    glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+    glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+    glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 
     // Create window
     m_Window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);

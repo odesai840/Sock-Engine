@@ -220,6 +220,40 @@ Entity Scene::DuplicateEntityHierarchy(Entity entity, Entity parent) {
     return newEntity;
 }
 
+bool Scene::WouldCreateCycle(Entity child, Entity newParent) {
+    if (!child || !newParent) {
+        return false;
+    }
+    
+    // If the new parent is the child itself, it would create a cycle
+    if (child == newParent) {
+        return true;
+    }
+    
+    // Traverse up the hierarchy from newParent to see if we encounter child
+    Entity current = newParent;
+    
+    while (current && current.HasComponent<RelationshipComponent>()) {
+        auto& relationship = current.GetComponent<RelationshipComponent>();
+        
+        // If current has no parent, we've reached the top of the hierarchy
+        if (relationship.parent == entt::null) {
+            break;
+        }
+        
+        // Move up to the parent
+        current = Entity(relationship.parent, &m_Registry);
+        
+        // If we've reached the child, a cycle would be formed
+        if (current == child) {
+            return true;
+        }
+    }
+    
+    // No cycle detected
+    return false;
+}
+
 void Scene::DestroyEntity(Entity entity) {
     if (!entity) {
         return;
@@ -321,6 +355,12 @@ std::vector<Entity> Scene::GetRootEntities() {
 
 void Scene::UpdateRelationship(Entity child, Entity parent) {
     if (!child) {
+        return;
+    }
+    
+    // Check if setting the parent would create a cycle
+    if (parent && WouldCreateCycle(child, parent)) {
+        // This would create a cycle, so don't update the relationship
         return;
     }
     

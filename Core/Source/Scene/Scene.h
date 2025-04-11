@@ -72,6 +72,9 @@ private:
 
     // Hierarchy management
     Entity DuplicateEntityHierarchy(Entity entity, Entity parent);
+
+    // Utility function to check if setting a new parent would create a cycle
+    bool WouldCreateCycle(Entity child, Entity newParent);
 };
 
 }

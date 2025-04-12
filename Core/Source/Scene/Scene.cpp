@@ -337,9 +337,6 @@ std::vector<Entity> Scene::GetRootEntities() {
         }
     }
     
-    // Reverse the order so that new entities appear at the bottom
-    std::reverse(rootEntities.begin(), rootEntities.end());
-    
     return rootEntities;
 }
 

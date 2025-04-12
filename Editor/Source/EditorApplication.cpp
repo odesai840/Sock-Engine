@@ -285,11 +285,23 @@ void EditorApplication::DrawSceneHierarchy() {
     Entity rootEntity = m_ActiveScene->GetRootEntity();
     
     // Create a collapsible header for the scene
-    bool headerOpen = ImGui::CollapsingHeader(m_ActiveScene->GetName().c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+    std::string headerText = "Scene Root (" + m_ActiveScene->GetName() + ")";
+    bool headerOpen = ImGui::CollapsingHeader(headerText.c_str(), ImGuiTreeNodeFlags_DefaultOpen);
     
     // Make the scene root selectable by clicking on the name
     if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
         m_ActiveScene->SetSelectedEntity(rootEntity);
+    }
+
+    // Handle drag-drop for reparenting to the scene root
+    if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ENTITY")) {
+            Entity* droppedEntity = (Entity*)payload->Data;
+            if (*droppedEntity && *droppedEntity != rootEntity) {
+                m_ActiveScene->UpdateRelationship(*droppedEntity, rootEntity);
+            }
+        }
+        ImGui::EndDragDropTarget();
     }
     
     if (headerOpen) {

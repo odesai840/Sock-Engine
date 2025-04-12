@@ -19,12 +19,9 @@ glm::mat4 TransformComponent::GetLocalModelMatrix() const {
 
 glm::mat4 TransformComponent::GetWorldModelMatrix(const entt::registry& registry) const {
     if (worldMatrixDirty) {
-        // Get the parent entity
-        auto entity = entt::entity(reinterpret_cast<std::uintptr_t>(this) - offsetof(TransformComponent, worldMatrixDirty));
-        
         // Check if the entity has a relationship component
-        if (registry.all_of<RelationshipComponent>(entity)) {
-            auto& relationship = registry.get<RelationshipComponent>(entity);
+        if (owner != entt::null && registry.valid(owner) && registry.all_of<RelationshipComponent>(owner)) {
+            auto& relationship = registry.get<RelationshipComponent>(owner);
             
             // If the entity has a parent, multiply by the parent's world matrix
             if (relationship.parent != entt::null && registry.valid(relationship.parent)) {
@@ -63,13 +60,11 @@ glm::vec3 TransformComponent::GetWorldPosition(const entt::registry& registry) c
 }
 
 glm::vec3 TransformComponent::GetWorldScale(const entt::registry& registry) const {
-    auto entity = entt::entity(reinterpret_cast<std::uintptr_t>(this) - offsetof(TransformComponent, worldMatrixDirty));
-    
     glm::vec3 worldScale = localScale;
     
     // Check if the entity has a relationship component
-    if (registry.all_of<RelationshipComponent>(entity)) {
-        auto& relationship = registry.get<RelationshipComponent>(entity);
+    if (owner != entt::null && registry.valid(owner) && registry.all_of<RelationshipComponent>(owner)) {
+        auto& relationship = registry.get<RelationshipComponent>(owner);
         
         // Traverse up the hierarchy to combine scales
         entt::entity parentEntity = relationship.parent;
@@ -92,13 +87,11 @@ glm::vec3 TransformComponent::GetWorldScale(const entt::registry& registry) cons
 }
 
 glm::quat TransformComponent::GetWorldRotation(const entt::registry& registry) const {
-    auto entity = entt::entity(reinterpret_cast<std::uintptr_t>(this) - offsetof(TransformComponent, worldMatrixDirty));
-    
     glm::quat worldRotation = localRotation;
     
     // Check if the entity has a relationship component
-    if (registry.all_of<RelationshipComponent>(entity)) {
-        auto& relationship = registry.get<RelationshipComponent>(entity);
+    if (owner != entt::null && registry.valid(owner) && registry.all_of<RelationshipComponent>(owner)) {
+        auto& relationship = registry.get<RelationshipComponent>(owner);
         
         // Traverse up the hierarchy to combine rotations
         entt::entity parentEntity = relationship.parent;

@@ -34,6 +34,9 @@ struct TransformComponent {
     mutable bool localMatrixDirty = true;
     mutable bool worldMatrixDirty = true;
 
+    // Entity that owns this component
+    entt::entity owner = entt::null;
+
     // Utility methods
     glm::mat4 GetLocalModelMatrix() const;
     glm::mat4 GetWorldModelMatrix(const entt::registry& registry) const;

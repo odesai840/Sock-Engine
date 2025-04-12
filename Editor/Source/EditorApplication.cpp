@@ -484,6 +484,9 @@ void EditorApplication::DrawTransformComponent(const TransformComponent& transfo
             transformComponent.localPosition = position;
             transformComponent.localMatrixDirty = true;
             transformComponent.worldMatrixDirty = true;
+            
+            // Mark all children's world matrices as dirty
+            entity.MarkChildrenWorldMatrixDirty();
         }
         
         // Rotation
@@ -502,6 +505,9 @@ void EditorApplication::DrawTransformComponent(const TransformComponent& transfo
             
             transformComponent.localMatrixDirty = true;
             transformComponent.worldMatrixDirty = true;
+            
+            // Mark all children's world matrices as dirty
+            entity.MarkChildrenWorldMatrixDirty();
         }
         
         // Scale
@@ -510,6 +516,9 @@ void EditorApplication::DrawTransformComponent(const TransformComponent& transfo
             transformComponent.localScale = scale;
             transformComponent.localMatrixDirty = true;
             transformComponent.worldMatrixDirty = true;
+            
+            // Mark all children's world matrices as dirty
+            entity.MarkChildrenWorldMatrixDirty();
         }
     }
 }

@@ -26,10 +26,11 @@ public:
     template<typename T>
     void RemoveComponent();
 
-    // Hierarchy management (will be implemented later)
+    // Hierarchy management
     Entity GetParent() const;
     void SetParent(Entity parent);
     std::vector<Entity> GetChildren() const;
+    void MarkChildrenWorldMatrixDirty();
 
     // Utility methods
     bool IsValid() const;

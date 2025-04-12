@@ -93,7 +93,9 @@ Entity Scene::CreateEntity(const std::string& name) {
     entt::entity entityHandle = m_Registry.CreateEntity(uniqueName);
     
     // Add default components
-    m_Registry.GetRegistry().emplace<TransformComponent>(entityHandle);
+    auto& transform = m_Registry.GetRegistry().emplace<TransformComponent>(entityHandle);
+    transform.owner = entityHandle;  // Set the owner field
+    
     m_Registry.GetRegistry().emplace<ActiveComponent>(entityHandle);
     m_Registry.GetRegistry().emplace<RelationshipComponent>(entityHandle);
     
@@ -142,6 +144,7 @@ Entity Scene::DuplicateEntityHierarchy(Entity entity, Entity parent) {
         dstTransform.localRotationDegrees = srcTransform.localRotationDegrees;
         dstTransform.localMatrixDirty = true;
         dstTransform.worldMatrixDirty = true;
+        dstTransform.owner = static_cast<entt::entity>(newEntity);
     }
     
     // Copy model component
@@ -375,6 +378,9 @@ void Scene::UpdateRelationship(Entity child, Entity parent) {
     if (child.HasComponent<TransformComponent>()) {
         auto& childTransform = child.GetComponent<TransformComponent>();
         childTransform.worldMatrixDirty = true;
+
+        // Recursively mark all children's world matrices as dirty
+        child.MarkChildrenWorldMatrixDirty();
     }
 }
 

@@ -76,6 +76,7 @@ void Entity::SetParent(Entity parent) {
     if (HasComponent<TransformComponent>()) {
         auto& transform = GetComponent<TransformComponent>();
         transform.worldMatrixDirty = true;
+        MarkChildrenWorldMatrixDirty();
     }
 }
 
@@ -92,6 +93,24 @@ std::vector<Entity> Entity::GetChildren() const {
     }
     
     return children;
+}
+
+void Entity::MarkChildrenWorldMatrixDirty() {
+    if (!IsValid() || !HasComponent<RelationshipComponent>())
+        return;
+        
+    auto& relationship = GetComponent<RelationshipComponent>();
+    
+    for (auto childHandle : relationship.children) {
+        Entity childEntity(childHandle, m_Registry);
+        if (childEntity.IsValid() && childEntity.HasComponent<TransformComponent>()) {
+            auto& childTransform = childEntity.GetComponent<TransformComponent>();
+            childTransform.worldMatrixDirty = true;
+            
+            // Recursively mark all children's world matrices as dirty
+            childEntity.MarkChildrenWorldMatrixDirty();
+        }
+    }
 }
 
 }

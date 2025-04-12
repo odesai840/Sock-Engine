@@ -47,6 +47,11 @@ void EditorApplication::OnUpdate(float deltaTime) {
     // Handle right mouse button state
     static bool wasRightMouseButtonDown = false;
     bool isRightMouseButtonDown = m_Input.GetMouseButtonHeld(GLFW_MOUSE_BUTTON_RIGHT);
+
+    // Make sure cursor is unlocked if window is not focused
+    if (!GetWindow().IsFocused() && GetWindow().IsMouseCursorLocked()) {
+        GetWindow().SetMouseCursorLocked(false);
+    }
     
     // Handle input for camera when viewport is focused
     if (m_ViewportFocused) {
@@ -65,7 +70,7 @@ void EditorApplication::OnUpdate(float deltaTime) {
         }
 
         // Editor camera movement and rotation
-        if (isRightMouseButtonDown) {
+        if (isRightMouseButtonDown && GetWindow().IsFocused()) {
             // Keyboard input for movement
             if (m_Input.GetKeyHeld(GLFW_KEY_W)) {
                 camera.ProcessKeyboard(FORWARD, deltaTime);
@@ -94,6 +99,12 @@ void EditorApplication::OnUpdate(float deltaTime) {
         glm::vec2 scrollDelta = m_Input.GetMouseScroll();
         if (scrollDelta.y != 0.0f) {
             camera.ProcessMouseScroll(scrollDelta.y);
+        }
+    }
+    else {
+        // If viewport is not focused, ensure cursor is unlocked
+        if (GetWindow().IsMouseCursorLocked()) {
+            GetWindow().SetMouseCursorLocked(false);
         }
     }
     
@@ -270,11 +281,22 @@ void EditorApplication::DrawViewport() {
 void EditorApplication::DrawSceneHierarchy() {
     ImGui::Begin("Scene Hierarchy");
 
-    ImGui::Text("Scene Root (%s)", m_ActiveScene->GetName().c_str());
+    // Display the root entity (the scene) as a header item
+    Entity rootEntity = m_ActiveScene->GetRootEntity();
     
-    // Draw all root entities and their children
-    for (auto entity : m_ActiveScene->GetRootEntities()) {
-        DrawEntityNode(entity);
+    // Create a collapsible header for the scene
+    bool headerOpen = ImGui::CollapsingHeader(m_ActiveScene->GetName().c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+    
+    // Make the scene root selectable by clicking on the name
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+        m_ActiveScene->SetSelectedEntity(rootEntity);
+    }
+    
+    if (headerOpen) {
+        // Draw all root entities and their children
+        for (auto entity : m_ActiveScene->GetRootEntities()) {
+            DrawEntityNode(entity);
+        }
     }
 
     if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && 
@@ -309,6 +331,11 @@ void EditorApplication::DrawSceneHierarchy() {
 
 void EditorApplication::DrawEntityNode(Entity entity) {
     if (!entity) {
+        return;
+    }
+
+    // Skip if this is the scene root entity (it's handled separately)
+    if (entity == m_ActiveScene->GetRootEntity()) {
         return;
     }
     
@@ -416,6 +443,24 @@ void EditorApplication::DrawInspector() {
     
     auto& registry = m_ActiveScene->GetRegistry().GetRegistry();
     auto entityHandle = static_cast<entt::entity>(selectedEntity);
+
+    // Special handling for scene root entity
+    if (selectedEntity == m_ActiveScene->GetRootEntity()) {
+        ImGui::Text("Scene Properties");
+        
+        char nameBuffer[256];
+        strcpy_s(nameBuffer, m_ActiveScene->GetName().c_str());
+        if (ImGui::InputText("Scene Name", nameBuffer, sizeof(nameBuffer))) {
+            m_ActiveScene->SetName(nameBuffer);
+        }
+        
+        // Any scene-specific settings could go here
+        ImGui::Separator();
+        
+        // No need to show components for the scene root
+        ImGui::End();
+        return;
+    }
     
     // Entity name and active state
     char nameBuffer[256];
@@ -459,7 +504,7 @@ void EditorApplication::DrawComponents(Entity entity) {
     auto& registry = m_ActiveScene->GetRegistry().GetRegistry();
     auto entityHandle = static_cast<entt::entity>(entity);
     
-    // Draw Transform component (always present)
+    // Draw Transform component (should be present on all entities except scene root)
     if (registry.all_of<TransformComponent>(entityHandle)) {
         auto& transform = registry.get<TransformComponent>(entityHandle);
         DrawTransformComponent(transform, entity);

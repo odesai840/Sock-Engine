@@ -159,6 +159,18 @@ void Window::Init(const std::string& title, uint32_t width, uint32_t height) {
         data.EventCallback(&event);
     });
 
+    // Window focus callback
+    glfwSetWindowFocusCallback(m_Window, [](GLFWwindow* window, int focused) {
+        WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+        data.Focused = focused != 0;
+    
+        // Always unlock cursor when window loses focus
+        if (!focused && data.CursorLocked) {
+            data.CursorLocked = false;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+    });
+
     // Initialize GLAD
     if (!gladLoadGL((GLADloadfunc)glfwGetProcAddress)) {
         std::cerr << "Failed to initialize GLAD!" << std::endl;

@@ -9,6 +9,11 @@ Scene::Scene(const std::string& name)
 {
     m_ShadowMapShader = std::make_unique<Shader>("../Shaders/ShadowMap.vert", "../Shaders/ShadowMap.frag");
     m_LightingShader = std::make_unique<Shader>("../Shaders/Lighting.vert", "../Shaders/Lighting.frag");
+
+    // Create the root entity
+    entt::entity rootEntityHandle = m_Registry.CreateEntity("Scene Root");
+    m_RootEntity = Entity(rootEntityHandle, &m_Registry);
+    m_Registry.GetRegistry().emplace<RelationshipComponent>(rootEntityHandle);
 }
 
 Scene::~Scene() {
@@ -86,6 +91,11 @@ void Scene::SetSkybox(const std::vector<std::string>& skyboxFaces) {
 }
 
 Entity Scene::CreateEntity(const std::string& name) {
+    // By default, use the scene root as parent
+    return CreateEntity(name, m_RootEntity);
+}
+
+Entity Scene::CreateEntity(const std::string& name, Entity parent) {
     // Generate a unique name
     std::string uniqueName = m_Registry.MakeNameUnique(name);
     
@@ -99,7 +109,15 @@ Entity Scene::CreateEntity(const std::string& name) {
     m_Registry.GetRegistry().emplace<ActiveComponent>(entityHandle);
     m_Registry.GetRegistry().emplace<RelationshipComponent>(entityHandle);
     
-    return Entity(entityHandle, &m_Registry);
+    // Create the entity
+    Entity entity(entityHandle, &m_Registry);
+    
+    // Set parent if provided and not the entity itself
+    if (parent && parent != entity) {
+        UpdateRelationship(entity, parent);
+    }
+    
+    return entity;
 }
 
 Entity Scene::DuplicateEntity(Entity entity) {
@@ -269,8 +287,16 @@ void Scene::DestroyEntity(Entity entity) {
 }
 
 Entity Scene::LoadModel(const std::string& filepath, const glm::vec3& position, const glm::vec3& scale) {
-    // Create a new entity
+    // Get model name
     std::string name = filepath.substr(filepath.find_last_of("/\\") + 1);
+
+    // Remove file extension from name
+    size_t lastDotPos = name.find_last_of(".");
+    if (lastDotPos != std::string::npos) {
+        name = name.substr(0, lastDotPos);
+    }
+
+    // Create a new entity with the model's name
     Entity entity = CreateEntity(name);
     
     // Set transform
@@ -299,15 +325,15 @@ Entity Scene::FindEntityByName(const std::string& name) {
 std::vector<Entity> Scene::GetRootEntities() {
     std::vector<Entity> rootEntities;
     
-    // Get all entities with relationship components
-    auto view = m_Registry.GetRegistry().view<RelationshipComponent>();
-    
-    for (auto entity : view) {
-        auto& relationship = view.get<RelationshipComponent>(entity);
+    // If we have a root entity, return its children
+    if (m_RootEntity && m_RootEntity.HasComponent<RelationshipComponent>()) {
+        auto& relationship = m_RootEntity.GetComponent<RelationshipComponent>();
         
-        // If entity has no parent, it's a root entity
-        if (relationship.parent == entt::null) {
-            rootEntities.emplace_back(entity, &m_Registry);
+        for (auto childHandle : relationship.children) {
+            Entity childEntity(childHandle, &m_Registry);
+            if (childEntity) {
+                rootEntities.push_back(childEntity);
+            }
         }
     }
     
@@ -343,45 +369,7 @@ void Scene::UpdateRelationship(Entity child, Entity parent) {
         return;
     }
     
-    // Remove child from old parent's children list
-    if (oldParent && oldParent.HasComponent<RelationshipComponent>()) {
-        auto& oldParentRelationship = oldParent.GetComponent<RelationshipComponent>();
-        
-        auto it = std::find(oldParentRelationship.children.begin(), 
-                            oldParentRelationship.children.end(), 
-                            static_cast<entt::entity>(child));
-                            
-        if (it != oldParentRelationship.children.end()) {
-            oldParentRelationship.children.erase(it);
-        }
-    }
-    
-    // Update child's parent reference
-    auto& childRelationship = child.GetComponent<RelationshipComponent>();
-    childRelationship.parent = parent ? static_cast<entt::entity>(parent) : entt::null;
-    
-    // Add child to new parent's children list
-    if (parent && parent.HasComponent<RelationshipComponent>()) {
-        auto& parentRelationship = parent.GetComponent<RelationshipComponent>();
-        
-        // Only add if not already in the list
-        auto it = std::find(parentRelationship.children.begin(), 
-                            parentRelationship.children.end(), 
-                            static_cast<entt::entity>(child));
-                            
-        if (it == parentRelationship.children.end()) {
-            parentRelationship.children.push_back(static_cast<entt::entity>(child));
-        }
-    }
-    
-    // Mark transform matrices as dirty to update world transform
-    if (child.HasComponent<TransformComponent>()) {
-        auto& childTransform = child.GetComponent<TransformComponent>();
-        childTransform.worldMatrixDirty = true;
-
-        // Recursively mark all children's world matrices as dirty
-        child.MarkChildrenWorldMatrixDirty();
-    }
+    child.SetParent(parent);
 }
 
 }

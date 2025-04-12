@@ -34,6 +34,7 @@ public:
     void SetMouseCursorLocked(bool locked);
     bool IsMouseCursorVisible() const { return m_Data.CursorVisible; }
     bool IsMouseCursorLocked() const { return m_Data.CursorLocked; }
+    bool IsFocused() const { return m_Data.Focused; }
 
 private:
     void Init(const std::string& title, uint32_t width, uint32_t height);
@@ -47,6 +48,7 @@ private:
         bool VSync;
         bool CursorVisible = true;
         bool CursorLocked = false;
+        bool Focused = true;
         EventCallbackFn EventCallback;
     };
 

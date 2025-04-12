@@ -25,8 +25,14 @@ glm::mat4 TransformComponent::GetWorldModelMatrix(const entt::registry& registry
             
             // If the entity has a parent, multiply by the parent's world matrix
             if (relationship.parent != entt::null && registry.valid(relationship.parent)) {
-                auto& parentTransform = registry.get<TransformComponent>(relationship.parent);
-                worldModelMatrix = parentTransform.GetWorldModelMatrix(registry) * GetLocalModelMatrix();
+                // Check if parent has a transform component, otherwise use identity matrix
+                if (registry.all_of<TransformComponent>(relationship.parent)) {
+                    auto& parentTransform = registry.get<TransformComponent>(relationship.parent);
+                    worldModelMatrix = parentTransform.GetWorldModelMatrix(registry) * GetLocalModelMatrix();
+                } else {
+                    // Parent doesn't have a transform (likely the scene root), so use local matrix directly
+                    worldModelMatrix = GetLocalModelMatrix();
+                }
             } else {
                 worldModelMatrix = GetLocalModelMatrix();
             }
@@ -69,10 +75,13 @@ glm::vec3 TransformComponent::GetWorldScale(const entt::registry& registry) cons
         // Traverse up the hierarchy to combine scales
         entt::entity parentEntity = relationship.parent;
         while (parentEntity != entt::null && registry.valid(parentEntity)) {
-            auto& parentTransform = registry.get<TransformComponent>(parentEntity);
-            worldScale.x *= parentTransform.localScale.x;
-            worldScale.y *= parentTransform.localScale.y;
-            worldScale.z *= parentTransform.localScale.z;
+            // Check if parent has transform component
+            if (registry.all_of<TransformComponent>(parentEntity)) {
+                auto& parentTransform = registry.get<TransformComponent>(parentEntity);
+                worldScale.x *= parentTransform.localScale.x;
+                worldScale.y *= parentTransform.localScale.y;
+                worldScale.z *= parentTransform.localScale.z;
+            }
             
             // Move up to the parent's parent
             if (registry.all_of<RelationshipComponent>(parentEntity)) {
@@ -96,8 +105,11 @@ glm::quat TransformComponent::GetWorldRotation(const entt::registry& registry) c
         // Traverse up the hierarchy to combine rotations
         entt::entity parentEntity = relationship.parent;
         while (parentEntity != entt::null && registry.valid(parentEntity)) {
-            auto& parentTransform = registry.get<TransformComponent>(parentEntity);
-            worldRotation = parentTransform.localRotation * worldRotation;
+            // Check if parent has transform component
+            if (registry.all_of<TransformComponent>(parentEntity)) {
+                auto& parentTransform = registry.get<TransformComponent>(parentEntity);
+                worldRotation = parentTransform.localRotation * worldRotation;
+            }
             
             // Move up to the parent's parent
             if (registry.all_of<RelationshipComponent>(parentEntity)) {

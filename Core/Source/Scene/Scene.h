@@ -27,6 +27,7 @@ public:
 
     // Entity management
     Entity CreateEntity(const std::string& name);
+    Entity CreateEntity(const std::string& name, Entity parent);
     Entity DuplicateEntity(Entity entity);
     void DestroyEntity(Entity entity);
 
@@ -41,6 +42,7 @@ public:
     // Scene info
     const std::string& GetName() const { return m_Name; }
     void SetName(const std::string& name) { m_Name = name; }
+    Entity GetRootEntity() const { return m_RootEntity; }
 
     // Registry access
     Registry& GetRegistry() { return m_Registry; }
@@ -58,6 +60,9 @@ private:
 
     // Entity registry
     Registry m_Registry;
+
+    // Root entity of the scene
+    Entity m_RootEntity;
 
     // Skybox
     std::vector<std::string> m_SkyboxFaces;

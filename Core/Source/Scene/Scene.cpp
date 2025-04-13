@@ -104,7 +104,7 @@ Entity Scene::CreateEntity(const std::string& name, Entity parent) {
     
     // Add default components
     auto& transform = m_Registry.GetRegistry().emplace<TransformComponent>(entityHandle);
-    transform.owner = entityHandle;  // Set the owner field
+    transform.owner = entityHandle;
     
     m_Registry.GetRegistry().emplace<ActiveComponent>(entityHandle);
     m_Registry.GetRegistry().emplace<RelationshipComponent>(entityHandle);
@@ -283,7 +283,7 @@ void Scene::DestroyEntity(Entity entity) {
     }
     
     // Destroy the entity
-    m_Registry.DestroyEntity(static_cast<entt::entity>(entity));
+    m_Registry.DestroyEntity(entity);
 }
 
 Entity Scene::LoadModel(const std::string& filepath, const glm::vec3& position, const glm::vec3& scale) {

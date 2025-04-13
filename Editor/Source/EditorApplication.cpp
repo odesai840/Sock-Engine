@@ -387,8 +387,7 @@ void EditorApplication::DrawEntityNode(Entity entity) {
     // Draw the context menu
     if (ImGui::BeginPopup(popupId.c_str())) {
         if (ImGui::MenuItem("Create Empty Child")) {
-            Entity childEntity = m_ActiveScene->CreateEntity("Empty Object");
-            m_ActiveScene->UpdateRelationship(childEntity, entity);
+            Entity childEntity = m_ActiveScene->CreateEntity("Empty Object", entity);
             m_ActiveScene->SetSelectedEntity(childEntity);
             ImGui::SetNextItemOpen(true);
         }

@@ -24,13 +24,13 @@ void main()
     mat3 normalMatrix = transpose(inverse(mat3(model)));
     vec3 T = normalize(normalMatrix * aTangent);
     vec3 N = normalize(normalMatrix * aNormal);
-    // re-orthogonalize T with respect to N
+    // Re-orthogonalize T with respect to N
     T = normalize(T - dot(T, N) * N);
-    // then retrieve perpendicular vector B with the cross product of T and N while accounting for handedness
+    // Then retrieve perpendicular vector B with the cross product of T and N while accounting for handedness
     vec3 B = cross(N, T) * (dot(cross(aNormal, aTangent), aBitangent) < 0.0 ? -1.0 : 1.0);
     TBN = mat3(T, B, N);
 
-    // calculate fragment position in light space for shadow mapping
+    // Calculate fragment position in light space for shadow mapping
     FragPosLightSpace = lightSpaceMatrix * vec4(FragPos, 1.0);
 
     gl_Position = projection * view * worldPos;

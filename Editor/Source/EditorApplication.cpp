@@ -29,8 +29,6 @@ EditorApplication::EditorApplication()
     };
     // Load skybox textures
     m_Renderer->LoadSkybox(skyboxFaces);
-    // Set skybox texture paths for the scene
-    m_ActiveScene->SetSkybox(skyboxFaces);
     m_SkyboxEnabled = m_Renderer->IsSkyboxEnabled();
     
     // Add a model to the scene
@@ -517,18 +515,16 @@ void EditorApplication::DrawComponents(Entity entity) {
     
     // Draw Transform component (should be present on all entities except scene root)
     if (registry.all_of<TransformComponent>(entityHandle)) {
-        auto& transform = registry.get<TransformComponent>(entityHandle);
-        DrawTransformComponent(transform, entity);
+        DrawTransformComponent(entity);
     }
     
     // Draw Model component if present
     if (registry.all_of<ModelComponent>(entityHandle)) {
-        auto& model = registry.get<ModelComponent>(entityHandle);
-        DrawModelComponent(model, entity);
+        DrawModelComponent(entity);
     }
 }
 
-void EditorApplication::DrawTransformComponent(const TransformComponent& transform, Entity entity) {
+void EditorApplication::DrawTransformComponent(Entity entity) {
     if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
         auto& registry = m_ActiveScene->GetRegistry().GetRegistry();
         auto entityHandle = static_cast<entt::entity>(entity);
@@ -568,7 +564,7 @@ void EditorApplication::DrawTransformComponent(const TransformComponent& transfo
         
         // Scale
         glm::vec3 scale = transformComponent.localScale;
-        if (ImGui::DragFloat3("Scale", glm::value_ptr(scale), 0.1f)) {
+        if (ImGui::DragFloat3("Scale", glm::value_ptr(scale), 0.01f)) {
             transformComponent.localScale = scale;
             transformComponent.localMatrixDirty = true;
             transformComponent.worldMatrixDirty = true;
@@ -579,7 +575,7 @@ void EditorApplication::DrawTransformComponent(const TransformComponent& transfo
     }
 }
 
-void EditorApplication::DrawModelComponent(const ModelComponent& component, Entity entity) {
+void EditorApplication::DrawModelComponent(Entity entity) {
     if (ImGui::CollapsingHeader("Model", ImGuiTreeNodeFlags_DefaultOpen)) {
         auto& registry = m_ActiveScene->GetRegistry().GetRegistry();
         auto entityHandle = static_cast<entt::entity>(entity);

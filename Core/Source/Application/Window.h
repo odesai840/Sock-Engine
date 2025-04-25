@@ -14,9 +14,7 @@ public:
 
     Window(const std::string& title, uint32_t width, uint32_t height);
     ~Window();
-
-    // Split OnUpdate into separate functions
-    void OnUpdate();
+    
     void PollEvents();
     void SwapBuffers();
 

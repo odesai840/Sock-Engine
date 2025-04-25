@@ -85,11 +85,6 @@ void Scene::Render(Renderer& renderer) {
     renderer.EndScene();
 }
 
-void Scene::SetSkybox(const std::vector<std::string>& skyboxFaces) {
-    m_SkyboxFaces = skyboxFaces;
-    m_HasSkybox = true;
-}
-
 Entity Scene::CreateEntity(const std::string& name) {
     // By default, use the scene root as parent
     return CreateEntity(name, m_RootEntity);
@@ -150,8 +145,6 @@ Entity Scene::DuplicateEntityHierarchy(Entity entity, Entity parent) {
     Entity newEntity = CreateEntity(newName);
     
     // Copy transform component
-    // Yes, every entity is created with a transform component by default
-    // No, I do not trust my own code
     if (entity.HasComponent<TransformComponent>() && newEntity.HasComponent<TransformComponent>()) {
         auto& srcTransform = entity.GetComponent<TransformComponent>();
         auto& dstTransform = newEntity.GetComponent<TransformComponent>();

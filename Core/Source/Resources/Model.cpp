@@ -26,33 +26,33 @@ void Model::Draw(Shader& shader)
 
 void Model::LoadModel(std::string const& path)
 {
-    // read file via ASSIMP
+    // Read file via ASSIMP
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_PreTransformVertices | aiProcess_MakeLeftHanded);
-    // check for errors
-    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) // if is Not Zero
+    // Check for errors
+    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) // If is Not Zero
     {
         std::cout << "ERROR::ASSIMP:: " << importer.GetErrorString() << std::endl;
         return;
     }
-    // retrieve the directory path of the filepath
+    // Retrieve the directory path of the filepath
     directory = path.substr(0, path.find_last_of('/'));
 
-    // process ASSIMP's root node recursively
+    // Process ASSIMP's root node recursively
     ProcessNode(scene->mRootNode, scene);
 }
 
 void Model::ProcessNode(aiNode* node, const aiScene* scene)
 {
-    // process each mesh located at the current node
+    // Process each mesh located at the current node
     for (unsigned int i = 0; i < node->mNumMeshes; i++)
     {
-        // the node object only contains indices to index the actual objects in the scene. 
+        // The node object only contains indices to index the actual objects in the scene. 
         // the scene contains all the data, node is just to keep stuff organized (like relations between nodes).
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
         meshes.push_back(ProcessMesh(mesh, scene));
     }
-    // after we've processed all of the meshes (if any) we then recursively process each of the children nodes
+    // After we've processed all of the meshes (if any) we then recursively process each of the children nodes
     for (unsigned int i = 0; i < node->mNumChildren; i++)
     {
         ProcessNode(node->mChildren[i], scene);
@@ -61,22 +61,22 @@ void Model::ProcessNode(aiNode* node, const aiScene* scene)
 
 Mesh Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 {
-    // data to fill
+    // Data to fill
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
     std::vector<Texture> textures;
 
-    // walk through each of the mesh's vertices
+    // Walk through each of the mesh's vertices
     for (unsigned int i = 0; i < mesh->mNumVertices; i++)
     {
         Vertex vertex;
-        glm::vec3 vector; // we declare a placeholder vector since assimp uses its own vector class that doesn't directly convert to glm's vec3 class so we transfer the data to this placeholder glm::vec3 first.
-        // positions
+        glm::vec3 vector; // We declare a placeholder vector since assimp uses its own vector class that doesn't directly convert to glm's vec3 class so we transfer the data to this placeholder glm::vec3 first.
+        // Positions
         vector.x = mesh->mVertices[i].x;
         vector.y = mesh->mVertices[i].y;
         vector.z = mesh->mVertices[i].z;
         vertex.Position = vector;
-        // normals
+        // Normals
         if (mesh->HasNormals())
         {
             vector.x = mesh->mNormals[i].x;
@@ -84,21 +84,21 @@ Mesh Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
             vector.z = mesh->mNormals[i].z;
             vertex.Normal = vector;
         }
-        // texture coordinates
-        if (mesh->mTextureCoords[0]) // does the mesh contain texture coordinates?
+        // Texture coordinates
+        if (mesh->mTextureCoords[0]) // Does the mesh contain texture coordinates?
         {
             glm::vec2 vec;
-            // a vertex can contain up to 8 different texture coordinates. We thus make the assumption that we won't 
+            // A vertex can contain up to 8 different texture coordinates. We thus make the assumption that we won't 
             // use models where a vertex can have multiple texture coordinates so we always take the first set (0).
             vec.x = mesh->mTextureCoords[0][i].x;
             vec.y = mesh->mTextureCoords[0][i].y;
             vertex.TexCoords = vec;
-            // tangent
+            // Tangent
             vector.x = mesh->mTangents[i].x;
             vector.y = mesh->mTangents[i].y;
             vector.z = mesh->mTangents[i].z;
             vertex.Tangent = vector;
-            // bitangent
+            // Bitangent
             vector.x = mesh->mBitangents[i].x;
             vector.y = mesh->mBitangents[i].y;
             vector.z = mesh->mBitangents[i].z;
@@ -110,38 +110,38 @@ Mesh Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 
         vertices.push_back(vertex);
     }
-    // now wak through each of the mesh's faces (a face is a mesh its triangle) and retrieve the corresponding vertex indices.
+    // Now wak through each of the mesh's faces (a face is a mesh its triangle) and retrieve the corresponding vertex indices.
     for (unsigned int i = 0; i < mesh->mNumFaces; i++)
     {
         aiFace face = mesh->mFaces[i];
-        // retrieve all indices of the face and store them in the indices vector
+        // Retrieve all indices of the face and store them in the indices vector
         for (unsigned int j = 0; j < face.mNumIndices; j++) {
             indices.push_back(face.mIndices[j]);
         }
     }
-    // process materials
+    // Process materials
     aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-    // we assume a convention for sampler names in the shaders. Each diffuse texture should be named
+    // We assume a convention for sampler names in the shaders. Each diffuse texture should be named
     // as 'texture_diffuseN' where N is a sequential number ranging from 1 to MAX_SAMPLER_NUMBER. 
     // Same applies to other texture as the following list summarizes:
     // diffuse: texture_diffuseN
     // specular: texture_specularN
     // normal: texture_normalN
 
-    // 1. diffuse maps
+    // 1. Diffuse maps
     std::vector<Texture> diffuseMaps = LoadMaterialTextures(scene, material, aiTextureType_DIFFUSE, "texture_diffuse");
     textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-    // 2. specular maps
+    // 2. Specular maps
     std::vector<Texture> specularMaps = LoadMaterialTextures(scene, material, aiTextureType_SPECULAR, "texture_specular");
     textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
-    // 3. normal maps
+    // 3. Normal maps
     std::vector<Texture> normalMaps = LoadMaterialTextures(scene, material, aiTextureType_DISPLACEMENT, "texture_normal");
     textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
-    // 4. height maps
+    // 4. Height maps
     std::vector<Texture> heightMaps = LoadMaterialTextures(scene, material, aiTextureType_HEIGHT, "texture_height");
     textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
-    // return a mesh object created from the extracted mesh data
+    // Return a mesh object created from the extracted mesh data
     return Mesh(vertices, indices, textures);
 }
 
@@ -153,34 +153,34 @@ std::vector<Texture> Model::LoadMaterialTextures(const aiScene* scene, aiMateria
         aiString str;
         mat->GetTexture(type, i, &str);
 
-        // check if texture was loaded before and if so, continue to next iteration: skip loading a new texture
+        // Check if texture was loaded before and if so, continue to next iteration: skip loading a new texture
         bool skip = false;
         for (unsigned int j = 0; j < textures_loaded.size(); j++)
         {
             if (std::strcmp(textures_loaded[j].path.data(), str.C_Str()) == 0)
             {
                 textures.push_back(textures_loaded[j]);
-                skip = true; // a texture with the same filepath has already been loaded, continue to next one. (optimization)
+                skip = true; // A texture with the same filepath has already been loaded, continue to next one. (optimization)
                 break;
             }
         }
-        if (!skip) { // if texture hasn't been loaded already, load it
-            // check if the texture is embedded
+        if (!skip) { // If texture hasn't been loaded already, load it
+            // Check if the texture is embedded
             if (auto texture = scene->GetEmbeddedTexture(str.C_Str())) {
-                // load texture from memory
+                // Load texture from memory
                 unsigned int textureID;
                 glGenTextures(1, &textureID);
 
                 GLenum format = GL_RGB;
                 if (texture->mHeight == 0) {
-                    // compressed format
+                    // Compressed format
                     int width, height, nrComponents;
                     unsigned char* data = SOIL_load_image_from_memory(
                         reinterpret_cast<unsigned char*>(texture->pcData),
                         texture->mWidth, &width, &height, &nrComponents, SOIL_LOAD_AUTO);
 
                     if (data) {
-                        // determine the color format
+                        // Determine the color format
                         if (nrComponents == 1) {
                             format = GL_RED;
                         }
@@ -205,14 +205,14 @@ std::vector<Texture> Model::LoadMaterialTextures(const aiScene* scene, aiMateria
                     }
                 }
                 else {
-                    // uncompressed format
+                    // Uncompressed format
                     format = GL_RGBA;
                     glBindTexture(GL_TEXTURE_2D, textureID);
                     glTexImage2D(GL_TEXTURE_2D, 0, format, texture->mWidth, texture->mHeight, 0, format, GL_UNSIGNED_BYTE, texture->pcData);
                     glGenerateMipmap(GL_TEXTURE_2D);
                 }
 
-                // set texture parameters
+                // Set texture parameters
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -221,7 +221,7 @@ std::vector<Texture> Model::LoadMaterialTextures(const aiScene* scene, aiMateria
                 Texture tex;
                 tex.id = textureID;
                 tex.type = typeName;
-                tex.path = str.C_Str(); // use the texture name as the path for embedded textures
+                tex.path = str.C_Str(); // Use the texture name as the path for embedded textures
                 textures.push_back(tex);
                 textures_loaded.push_back(tex);
             }
@@ -231,7 +231,7 @@ std::vector<Texture> Model::LoadMaterialTextures(const aiScene* scene, aiMateria
                 tex.type = typeName;
                 tex.path = str.C_Str();
                 textures.push_back(tex);
-                textures_loaded.push_back(tex); // store it as texture loaded for entire model, to ensure we won't unnecessary load duplicate textures.
+                textures_loaded.push_back(tex); // Store it as texture loaded for entire model, to ensure we won't unnecessary load duplicate textures.
             }
         }
     }

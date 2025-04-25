@@ -36,7 +36,7 @@ project "Core"
 
     filter "system:windows"
         systemversion "latest"
-        defines { }
+        defines { "WINDOWS" }
 
     filter "configurations:Debug"
         defines { "DEBUG" }

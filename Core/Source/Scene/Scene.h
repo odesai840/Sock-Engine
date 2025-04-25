@@ -19,9 +19,6 @@ public:
     void OnUpdate(float deltaTime);
     void Render(Renderer& renderer);
 
-    // Scene configuration
-    void SetSkybox(const std::vector<std::string>& skyboxFaces);
-
     // Camera access
     Camera& GetCamera() { return m_EditorCamera; }
 
@@ -63,10 +60,6 @@ private:
 
     // Root entity of the scene
     Entity m_RootEntity;
-
-    // Skybox
-    std::vector<std::string> m_SkyboxFaces;
-    bool m_HasSkybox = false;
 
     // Shaders
     std::unique_ptr<Shader> m_ShadowMapShader;

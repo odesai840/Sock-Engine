@@ -11,11 +11,11 @@ class Shader
 {
 public:
     unsigned int ID;
-    // constructor generates the shader on the fly
+    // Constructor generates the shader on the fly
     Shader(const char* vertexPath, const char* fragmentPath);
-    // activate the shader
+    // Activate the shader
     void Use() const;
-    // utility uniform functions
+    // Utility uniform functions
     // ------------------------------------------------------------------------
     void SetBool(const std::string& name, bool value) const;
     // ------------------------------------------------------------------------
@@ -39,7 +39,7 @@ public:
     void SetMat4(const std::string& name, const glm::mat4& mat) const;
 
 private:
-    // utility function for checking shader compilation/linking errors.
+    // Utility function for checking shader compilation/linking errors.
     void CheckCompileErrors(GLuint shader, std::string type);
 };
 

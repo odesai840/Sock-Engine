@@ -4,7 +4,6 @@
 #include "Application/Application.h"
 #include "Renderer/Renderer.h"
 #include "Scene/Scene.h"
-#include "Scene/Component.h"
 
 namespace SockEngine {
 
@@ -54,8 +53,8 @@ private:
     void DrawSceneHierarchy();
     void DrawEntityNode(Entity entity);
     void DrawComponents(Entity entity);
-    void DrawTransformComponent(const TransformComponent& transform, Entity entity);
-    void DrawModelComponent(const ModelComponent& component, Entity entity);
+    void DrawTransformComponent(Entity entity);
+    void DrawModelComponent(Entity entity);
     void DrawAddComponentPopup(Entity entity);
     void DrawInspector();
     void DrawDebugPanel();

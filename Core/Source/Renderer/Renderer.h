@@ -62,7 +62,7 @@ private:
     glm::mat4 m_LightSpaceMatrix;
     
     // Shadow mapping
-    unsigned int m_ShadowWidth = 4096, m_ShadowHeight = 4096;
+    unsigned int m_ShadowWidth = 8192, m_ShadowHeight = 8192;
     unsigned int m_DepthMapFBO;
     unsigned int m_DepthMap;
     float m_ShadowBias = 0.00011f;
@@ -72,7 +72,7 @@ private:
     
     // Skybox
     unsigned int m_SkyboxVAO, m_SkyboxVBO;
-    unsigned int m_CubemapTexture;
+    unsigned int m_SkyboxTexture;
     std::unique_ptr<Shader> m_SkyboxShader;
     bool m_EnableSkybox = true;
     

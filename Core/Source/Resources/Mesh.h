@@ -12,19 +12,19 @@
 namespace SockEngine {
 
 struct Vertex {
-    // position
+    // Position
     glm::vec3 Position;
-    // normal
+    // Normal
     glm::vec3 Normal;
-    // texCoords
+    // TexCoords
     glm::vec2 TexCoords;
-    // tangent
+    // Tangent
     glm::vec3 Tangent;
-    // bitangent
+    // Bitangent
     glm::vec3 Bitangent;
-    //bone indexes which will influence this vertex
+    // Bone indexes which will influence this vertex
     int m_BoneIDs[MAX_BONE_INFLUENCE];
-    //weights from each bone
+    // Weights from each bone
     float m_Weights[MAX_BONE_INFLUENCE];
 };
 
@@ -36,23 +36,23 @@ struct Texture {
 
 class Mesh {
 public:
-    // mesh Data
+    // Mesh data
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
     std::vector<Texture> textures;
     unsigned int VAO;
 
-    // constructor
+    // Constructor
     Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures);
 
-    // render the mesh
+    // Render the mesh
     void Draw(Shader& shader);
 
 private:
-    // render data 
+    // Render data 
     unsigned int VBO, EBO;
 
-    // initializes all the buffer objects/arrays
+    // Initializes all the buffer objects/arrays
     void SetupMesh();
 };
 

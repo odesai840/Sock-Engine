@@ -239,7 +239,7 @@ void Renderer::EndScene() {
         // Skybox cube
         glBindVertexArray(m_SkyboxVAO);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, m_CubemapTexture);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, m_SkyboxTexture);
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
         glDepthFunc(GL_LESS); // Set depth function back to default
@@ -285,10 +285,10 @@ void Renderer::RenderModel(Model& model, const glm::mat4& transform, Shader& sha
 }
 
 void Renderer::LoadSkybox(const std::vector<std::string>& skyboxFaces) {
-    if (m_CubemapTexture != 0) {
-        glDeleteTextures(1, &m_CubemapTexture);
+    if (m_SkyboxTexture != 0) {
+        glDeleteTextures(1, &m_SkyboxTexture);
     }
-    m_CubemapTexture = LoadCubemap(skyboxFaces);
+    m_SkyboxTexture = LoadCubemap(skyboxFaces);
 }
 
 void Renderer::SetViewportSize(uint32_t width, uint32_t height) {

@@ -58,21 +58,21 @@ uniform bool debugSpec;
 uniform sampler2D shadowMap;
 uniform float shadowBias;
 
-// calculates shadow factor
+// Calculates shadow factor
 float ShadowCalculation(vec4 fragPosLightSpace)
 {
-    // perform perspective divide
+    // Perform perspective divide
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     
-    // transform to [0,1] range
+    // Transform to [0,1] range
     projCoords = projCoords * 0.5 + 0.5;
-    // get closest depth value from light's perspective
+    // Get closest depth value from light's perspective
     float closestDepth = texture(shadowMap, projCoords.xy).r;
-    // get current depth value
+    // Get current depth value
     float currentDepth = projCoords.z;
-    // check if fragment is in shadow
+    // Check if fragment is in shadow
     float shadow = 0.0;
-    // use bias to prevent shadow acne
+    // Use bias to prevent shadow acne
     float bias = max(shadowBias * (1.0 - dot(normalize(TBN[2]), normalize(-dirLight.direction))), shadowBias * 0.5);
 
     // PCF (Percentage Closer Filtering) for softer shadows
@@ -87,7 +87,7 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     }
     shadow /= 9.0;
 
-    // keep shadow at 0.0 when outside the light's far plane
+    // Keep shadow at 0.0 when outside the light's far plane
     if(projCoords.z > 1.0) {
         shadow = 0.0;
     }
@@ -95,41 +95,41 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     return shadow;
 }
 
-// calculates the color when using a directional light.
+// Calculates the color when using a directional light.
 vec3 CalcDirLight(DirLight light, vec4 diffuseMap, vec4 specularMap, vec3 normal, vec3 viewDir, out float specOut)
 {
     vec3 lightDir = normalize(-light.direction);
-    // diffuse shading
+    // Diffuse shading
     float diff = max(dot(normal, lightDir), 0.0);
-    // specular shading
+    // Specular shading
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
-    // combine results
+    // Combine results
     vec3 ambient = light.ambient * vec3(diffuseMap);
     vec3 diffuse = light.diffuse * diff * vec3(diffuseMap);
     vec3 specular = light.specular * spec * vec3(specularMap);
     specOut += spec;
 
-    // calculate shadow
+    // Calculate shadow
     float shadow = ShadowCalculation(FragPosLightSpace);
 
-    // apply shadow to diffuse and specular components only
+    // Apply shadow to diffuse and specular components only
     return ambient + (1.0 - shadow) * (diffuse + specular);
 }
 
-// calculates the color when using a point light.
+// Calculates the color when using a point light.
 vec3 CalcPointLight(PointLight light, vec4 diffuseMap, vec4 specularMap, vec3 normal, vec3 viewDir, out float specOut)
 {
     vec3 lightDir = normalize(light.position - FragPos);
-    // diffuse shading
+    // Diffuse shading
     float diff = max(dot(normal, lightDir), 0.0);
-    // specular shading
+    // Specular shading
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
-    // attenuation
+    // Attenuation
     float distance = length(light.position - FragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
-    // combine results
+    // Combine results
     vec3 ambient = light.ambient * vec3(diffuseMap);
     vec3 diffuse = light.diffuse * diff * vec3(diffuseMap);
     vec3 specular = light.specular * spec * vec3(specularMap);
@@ -140,23 +140,23 @@ vec3 CalcPointLight(PointLight light, vec4 diffuseMap, vec4 specularMap, vec3 no
     return (ambient + diffuse + specular);
 }
 
-// calculates the color when using a spot light.
+// Calculates the color when using a spot light.
 vec3 CalcSpotLight(SpotLight light, vec4 diffuseMap, vec4 specularMap, vec3 normal, vec3 viewDir, out float specOut)
 {
     vec3 lightDir = normalize(light.position - FragPos);
-    // diffuse shading
+    // Diffuse shading
     float diff = max(dot(normal, lightDir), 0.0);
-    // specular shading
+    // Specular shading
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
-    // attenuation
+    // Attenuation
     float distance = length(light.position - FragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
-    // spotlight intensity
+    // Spotlight intensity
     float theta = dot(lightDir, normalize(-light.direction));
     float epsilon = light.cutOff - light.outerCutOff;
     float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
-    // combine results
+    // Combine results
     vec3 ambient = light.ambient * vec3(diffuseMap);
     vec3 diffuse = light.diffuse * diff * vec3(diffuseMap);
     vec3 specular = light.specular * spec * vec3(specularMap);
@@ -171,25 +171,25 @@ void main()
 {
     vec4 diffuseMap = texture(material.texture_diffuse1, TexCoords);
 
-    // discard fragments with low alpha for transparency
+    // Discard fragments with low alpha for transparency
     if (diffuseMap.a < 0.1){
         discard;
     }
 
     vec4 specularMap = texture(material.texture_specular1, TexCoords);
 
-    // properties
+    // Properties
     vec3 normal = texture(material.texture_normal1, TexCoords).rgb;
     normal = normal * 2.0 - 1.0;
     normal = normalize(TBN * normal);
     vec3 viewDir = normalize(viewPos - FragPos);
     float specOut = 0.0;
 
-    // phase 1: directional lighting
+    // Phase 1: directional lighting
     vec3 result = CalcDirLight(dirLight, diffuseMap, specularMap, normal, viewDir, specOut);
-    // phase 2: point light
+    // Phase 2: point light
     //result += CalcPointLight(pointLight, diffuseMap, specularMap, normal, viewDir, specOut);
-    // phase 3: spot light
+    // Phase 3: spot light
     //result += CalcSpotLight(spotLight, diffuseMap, specularMap, normal, viewDir, specOut);
 
     if(debugNormals) {
@@ -199,7 +199,7 @@ void main()
         FragColor = vec4(vec3(specOut), 1.0);
     }
     else {
-        // output the color with calculated transparency
+        // Output the color with calculated transparency
         FragColor = vec4(result, diffuseMap.a);
     }
 }

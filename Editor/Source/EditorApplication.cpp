@@ -457,8 +457,9 @@ void EditorApplication::DrawInspector() {
     if (selectedEntity == m_ActiveScene->GetRootEntity()) {
         ImGui::Text("Scene Properties");
         
-        char nameBuffer[256];
-        strcpy_s(nameBuffer, m_ActiveScene->GetName().c_str());
+        char nameBuffer[256] = "\0";
+        strcpy(nameBuffer, m_ActiveScene->GetName().c_str());
+        nameBuffer[sizeof(nameBuffer) - 1] = '\0';
         if (ImGui::InputText("Scene Name", nameBuffer, sizeof(nameBuffer))) {
             m_ActiveScene->SetName(nameBuffer);
         }
@@ -472,8 +473,9 @@ void EditorApplication::DrawInspector() {
     }
     
     // Entity name and active state
-    char nameBuffer[256];
-    strcpy_s(nameBuffer, selectedEntity.GetName().c_str());
+    char nameBuffer[256] = "\0";
+    strcpy(nameBuffer, selectedEntity.GetName().c_str());
+    nameBuffer[sizeof(nameBuffer) - 1] = '\0';
     if (ImGui::InputText("Name", nameBuffer, sizeof(nameBuffer))) {
         selectedEntity.SetName(nameBuffer);
     }

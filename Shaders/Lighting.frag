@@ -5,6 +5,7 @@ struct Material {
     sampler2D texture_diffuse1;
     sampler2D texture_specular1;
     sampler2D texture_normal1;
+    sampler2D texture_opacity1;
     float shininess;
 };
 
@@ -171,8 +172,15 @@ void main()
 {
     vec4 diffuseMap = texture(material.texture_diffuse1, TexCoords);
 
+    // Get opacity from the opacity map if it exists
+    float opacity = 1.0;
+    if (textureSize(material.texture_opacity1, 0).x > 1) {
+        opacity = texture(material.texture_opacity1, TexCoords).r;
+        diffuseMap.a *= opacity;
+    }
+    
     // Discard fragments with low alpha for transparency
-    if (diffuseMap.a < 0.1){
+    if (diffuseMap.a < 0.01){
         discard;
     }
 

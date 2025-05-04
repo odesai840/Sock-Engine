@@ -21,6 +21,8 @@ void Mesh::Draw(Shader& shader)
     unsigned int specularNr = 1;
     unsigned int normalNr = 1;
     unsigned int heightNr = 1;
+    unsigned int opacityNr = 1;
+    
     for (unsigned int i = 0; i < textures.size(); i++)
     {
         glActiveTexture(GL_TEXTURE0 + i); // Active proper texture unit before binding
@@ -38,6 +40,9 @@ void Mesh::Draw(Shader& shader)
         }
         else if (name == "texture_height") {
             number = std::to_string(heightNr++); // Transfer unsigned int to string
+        }
+        else if (name == "texture_opacity") {
+            number = std::to_string(opacityNr++); // transfer unsigned int to string
         }
 
         // Now set the sampler to the correct texture unit

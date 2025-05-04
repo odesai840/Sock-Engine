@@ -24,7 +24,7 @@ void Renderer::Initialize(uint32_t viewportWidth, uint32_t viewportHeight) {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
-    glFrontFace(GL_CW);
+    glFrontFace(GL_CCW);
     
     // Initialize skybox
     SetupSkybox();

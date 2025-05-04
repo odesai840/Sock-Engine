@@ -28,7 +28,7 @@ void Model::LoadModel(std::string const& path)
 {
     // Read file via ASSIMP
     Assimp::Importer importer;
-    const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_PreTransformVertices | aiProcess_MakeLeftHanded);
+    const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
     // Check for errors
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) // If is Not Zero
     {
@@ -52,7 +52,7 @@ void Model::ProcessNode(aiNode* node, const aiScene* scene)
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
         meshes.push_back(ProcessMesh(mesh, scene));
     }
-    // After we've processed all of the meshes (if any) we then recursively process each of the children nodes
+    // After we've processed all the meshes (if any) we then recursively process each of the children nodes
     for (unsigned int i = 0; i < node->mNumChildren; i++)
     {
         ProcessNode(node->mChildren[i], scene);
@@ -135,12 +135,15 @@ Mesh Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
     std::vector<Texture> specularMaps = LoadMaterialTextures(scene, material, aiTextureType_SPECULAR, "texture_specular");
     textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
     // 3. Normal maps
-    std::vector<Texture> normalMaps = LoadMaterialTextures(scene, material, aiTextureType_DISPLACEMENT, "texture_normal");
+    std::vector<Texture> normalMaps = LoadMaterialTextures(scene, material, aiTextureType_NORMALS, "texture_normal");
     textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
     // 4. Height maps
     std::vector<Texture> heightMaps = LoadMaterialTextures(scene, material, aiTextureType_HEIGHT, "texture_height");
     textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
-
+    // 5. Opacity maps
+    std::vector<Texture> opacityMaps = LoadMaterialTextures(scene, material, aiTextureType_OPACITY, "texture_opacity");
+    textures.insert(textures.end(), opacityMaps.begin(), opacityMaps.end());
+    
     // Return a mesh object created from the extracted mesh data
     return Mesh(vertices, indices, textures);
 }
@@ -231,7 +234,7 @@ std::vector<Texture> Model::LoadMaterialTextures(const aiScene* scene, aiMateria
                 tex.type = typeName;
                 tex.path = str.C_Str();
                 textures.push_back(tex);
-                textures_loaded.push_back(tex); // Store it as texture loaded for entire model, to ensure we won't unnecessary load duplicate textures.
+                textures_loaded.push_back(tex); // Store it as texture loaded for entire model, to ensure we won't unnecessarily load duplicate textures.
             }
         }
     }
@@ -247,7 +250,7 @@ unsigned int Model::TextureFromFile(const char* path, const std::string& dir, bo
     glGenTextures(1, &textureID);
 
     int width, height, nrComponents;
-    unsigned char* data = SOIL_load_image(filename.c_str(), &width, &height, &nrComponents, 0);
+    unsigned char* data = SOIL_load_image(filename.c_str(), &width, &height, &nrComponents, SOIL_LOAD_AUTO);
     GLenum format = GL_RGB;
     if (data)
     {

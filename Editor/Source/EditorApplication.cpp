@@ -32,7 +32,7 @@ EditorApplication::EditorApplication()
     m_SkyboxEnabled = m_Renderer->IsSkyboxEnabled();
     
     // Add a model to the scene
-    m_ActiveScene->LoadModel("../Assets/Models/sponza/sponza.obj");
+    m_ActiveScene->LoadModel("../Assets/Models/box/box.fbx");
 }
 
 EditorApplication::~EditorApplication() {

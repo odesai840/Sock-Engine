@@ -88,7 +88,7 @@ void EditorApplication::OnUpdate(float deltaTime) {
             
             // Only process significant motion
             if (glm::length(mouseDelta) > 0.01f) {
-                float sensitivity = 0.1f; // Adjust as needed
+                float sensitivity = 0.1f;
                 camera.ProcessMouseMovement(mouseDelta.x * sensitivity, -mouseDelta.y * sensitivity);
             }
         }
@@ -119,7 +119,7 @@ void EditorApplication::OnRender() {
     m_Renderer->EnableDebugSpecular(m_DebugSpecular);
     
     // Render scene
-    m_ActiveScene->Render(*m_Renderer);
+    m_Renderer->RenderScene(*m_ActiveScene, m_ActiveScene->GetCamera());
 }
 
 void EditorApplication::OnImGuiRender() {

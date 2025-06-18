@@ -17,7 +17,6 @@ public:
     ~Scene();
 
     void OnUpdate(float deltaTime);
-    void Render(Renderer& renderer);
 
     // Camera access
     Camera& GetCamera() { return m_EditorCamera; }
@@ -60,10 +59,6 @@ private:
 
     // Root entity of the scene
     Entity m_RootEntity;
-
-    // Shaders
-    std::unique_ptr<Shader> m_ShadowMapShader;
-    std::unique_ptr<Shader> m_LightingShader;
 
     // Editor state
     Entity m_SelectedEntity;

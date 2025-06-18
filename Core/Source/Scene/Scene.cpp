@@ -7,9 +7,6 @@ namespace SockEngine {
 Scene::Scene(const std::string& name)
     : m_Name(name), m_EditorCamera(glm::vec3(0.0f, 90.0f, 0.0f))
 {
-    m_ShadowMapShader = std::make_unique<Shader>("../Shaders/ShadowMap.vert", "../Shaders/ShadowMap.frag");
-    m_LightingShader = std::make_unique<Shader>("../Shaders/Lighting.vert", "../Shaders/Lighting.frag");
-
     // Create the root entity
     entt::entity rootEntityHandle = m_Registry.CreateEntity("Scene Root");
     m_RootEntity = Entity(rootEntityHandle, &m_Registry);
@@ -29,60 +26,9 @@ void Scene::OnUpdate(float deltaTime) {
         if (active.active) {
             auto& transform = view.get<TransformComponent>(entity);
             // Perform any per-entity updates here
+            // For example: animation updates, physics updates, etc.
         }
     }
-}
-
-void Scene::Render(Renderer& renderer) {
-    // First render pass: shadow mapping
-    renderer.BeginShadowPass(glm::vec3(-0.2f, -1.0f, -0.3f), 50000.0f);
-    
-    m_ShadowMapShader->Use();
-    m_ShadowMapShader->SetMat4("lightSpaceMatrix", renderer.GetLightSpaceMatrix());
-    
-    // Render all entities with model components that cast shadows
-    auto shadowView = m_Registry.GetRegistry().view<TransformComponent, ModelComponent, ActiveComponent>();
-    for (auto entity : shadowView) {
-        auto& active = shadowView.get<ActiveComponent>(entity);
-        auto& model = shadowView.get<ModelComponent>(entity);
-        
-        if (active.active && model.castShadows && model.model) {
-            auto& transform = shadowView.get<TransformComponent>(entity);
-            
-            // Set model matrix
-            m_ShadowMapShader->SetMat4("model", transform.GetWorldModelMatrix(m_Registry.GetRegistry()));
-            
-            // Draw the model
-            model.model->Draw(*m_ShadowMapShader);
-        }
-    }
-    
-    renderer.EndShadowPass();
-    
-    // Second render pass: main scene rendering
-    renderer.BeginScene(m_EditorCamera);
-    
-    m_LightingShader->Use();
-    m_LightingShader->SetVec3("viewPos", m_EditorCamera.Position);
-    
-    // Render all entities with model components
-    auto renderView = m_Registry.GetRegistry().view<TransformComponent, ModelComponent, ActiveComponent>();
-    for (auto entity : renderView) {
-        auto& active = renderView.get<ActiveComponent>(entity);
-        auto& model = renderView.get<ModelComponent>(entity);
-        
-        if (active.active && model.model) {
-            auto& transform = renderView.get<TransformComponent>(entity);
-            
-            // Set material properties
-            m_LightingShader->SetFloat("material.shininess", model.shininess);
-            
-            // Render the model
-            renderer.RenderModel(*model.model, transform.GetWorldModelMatrix(m_Registry.GetRegistry()), *m_LightingShader);
-        }
-    }
-    
-    renderer.EndScene();
 }
 
 Entity Scene::CreateEntity(const std::string& name) {

@@ -1,5 +1,5 @@
-#ifndef COMPONENTS_H
-#define COMPONENTS_H
+#ifndef COMPONENT_H
+#define COMPONENT_H
 
 #include <entt/entt.hpp>
 #include "Resources/Model.h"

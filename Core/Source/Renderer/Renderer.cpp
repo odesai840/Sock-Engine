@@ -11,6 +11,8 @@ Renderer::Renderer()
     : m_DirectionalLightDir(glm::vec3(-0.2f, -1.0f, -0.3f))
 {
     m_SkyboxShader = std::make_unique<Shader>("../Shaders/Skybox.vert", "../Shaders/Skybox.frag");
+    m_ShadowMapShader = std::make_unique<Shader>("../Shaders/ShadowMap.vert", "../Shaders/ShadowMap.frag");
+    m_LightingShader = std::make_unique<Shader>("../Shaders/Lighting.vert", "../Shaders/Lighting.frag");
 }
 
 Renderer::~Renderer() {
@@ -48,6 +50,142 @@ void Renderer::Shutdown() {
     // Delete shadow mapping resources
     glDeleteFramebuffers(1, &m_DepthMapFBO);
     glDeleteTextures(1, &m_DepthMap);
+}
+
+void Renderer::RenderScene(Scene& scene, Camera& camera) {
+    // Collect all renderable entities from the scene
+    std::vector<Entity> renderableEntities = CollectRenderableEntities(scene);
+    
+    // First pass: Shadow mapping
+    RenderShadowPass(renderableEntities, scene);
+    
+    // Second pass: Main rendering
+    RenderMainPass(renderableEntities, scene, camera);
+}
+
+std::vector<Entity> Renderer::CollectRenderableEntities(Scene& scene) {
+    std::vector<Entity> entities;
+    
+    auto& registry = scene.GetRegistry().GetRegistry();
+    auto view = registry.view<TransformComponent, ModelComponent, ActiveComponent>();
+    
+    for (auto entityHandle : view) {
+        auto& active = view.get<ActiveComponent>(entityHandle);
+        auto& model = view.get<ModelComponent>(entityHandle);
+        
+        if (active.active && model.model) {
+            Entity entity(entityHandle, &scene.GetRegistry());
+            entities.push_back(entity);
+        }
+    }
+    
+    return entities;
+}
+
+void Renderer::RenderShadowPass(const std::vector<Entity>& entities, Scene& scene) {
+    BeginShadowPass(m_DirectionalLightDir, 50000.0f);
+    
+    m_ShadowMapShader->Use();
+    m_ShadowMapShader->SetMat4("lightSpaceMatrix", m_LightSpaceMatrix);
+    
+    auto& registry = scene.GetRegistry().GetRegistry();
+    
+    // Render all entities that cast shadows
+    for (const auto& entity : entities) {
+        if (entity.HasComponent<ModelComponent>()) {
+            auto& modelComponent = entity.GetComponent<ModelComponent>();
+            
+            if (modelComponent.castShadows) {
+                auto& transform = entity.GetComponent<TransformComponent>();
+                glm::mat4 worldMatrix = transform.GetWorldModelMatrix(registry);
+                
+                m_ShadowMapShader->SetMat4("model", worldMatrix);
+                modelComponent.model->Draw(*m_ShadowMapShader);
+            }
+        }
+    }
+    
+    EndShadowPass();
+}
+
+void Renderer::RenderMainPass(const std::vector<Entity>& entities, Scene& scene, Camera& camera) {
+    BeginScene(camera);
+    
+    m_LightingShader->Use();
+    m_LightingShader->SetVec3("viewPos", camera.Position);
+    
+    // Set common uniforms
+    m_LightingShader->SetBool("debugNormals", m_DebugNormals);
+    m_LightingShader->SetBool("debugSpec", m_DebugSpecular);
+    
+    // Set lighting parameters
+    m_LightingShader->SetVec3("dirLight.direction", m_DirectionalLightDir);
+    m_LightingShader->SetVec3("dirLight.ambient", 0.1f, 0.1f, 0.1f);
+    m_LightingShader->SetVec3("dirLight.diffuse", 1.0f, 1.0f, 1.0f);
+    m_LightingShader->SetVec3("dirLight.specular", 0.3f, 0.3f, 0.3f);
+    
+    // Set shadow mapping uniforms
+    m_LightingShader->SetMat4("lightSpaceMatrix", m_LightSpaceMatrix);
+    m_LightingShader->SetFloat("shadowBias", m_ShadowBias);
+    
+    // Bind shadow map
+    glActiveTexture(GL_TEXTURE0 + 5);
+    glBindTexture(GL_TEXTURE_2D, m_DepthMap);
+    m_LightingShader->SetInt("shadowMap", 5);
+    
+    // Set view/projection matrices
+    m_LightingShader->SetMat4("projection", m_ProjectionMatrix);
+    m_LightingShader->SetMat4("view", m_ViewMatrix);
+    
+    auto& registry = scene.GetRegistry().GetRegistry();
+    
+    // Render all entities
+    for (const auto& entity : entities) {
+        if (entity.HasComponent<ModelComponent>() && entity.HasComponent<TransformComponent>()) {
+            auto& modelComponent = entity.GetComponent<ModelComponent>();
+            auto& transform = entity.GetComponent<TransformComponent>();
+            
+            // Set material properties
+            m_LightingShader->SetFloat("material.shininess", modelComponent.shininess);
+            
+            // Set model transform
+            glm::mat4 worldMatrix = transform.GetWorldModelMatrix(registry);
+            m_LightingShader->SetMat4("model", worldMatrix);
+            
+            // Draw the model
+            modelComponent.model->Draw(*m_LightingShader);
+        }
+    }
+    
+    // Render skybox if enabled
+    if (!m_DebugNormals && !m_DebugSpecular && m_EnableSkybox) {
+        RenderSkybox();
+    }
+    
+    EndScene();
+}
+
+void Renderer::RenderSkybox() {
+    // Disable culling
+    glDisable(GL_CULL_FACE);
+    
+    // Draw skybox
+    glDepthFunc(GL_LEQUAL); // Change depth function so depth test passes when values are equal to depth buffer's content
+    m_SkyboxShader->Use();
+    glm::mat4 view = glm::mat4(glm::mat3(m_ViewMatrix)); // Remove translation from the view matrix
+    m_SkyboxShader->SetMat4("view", view);
+    m_SkyboxShader->SetMat4("projection", m_ProjectionMatrix);
+    
+    // Skybox cube
+    glBindVertexArray(m_SkyboxVAO);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_SkyboxTexture);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glBindVertexArray(0);
+    glDepthFunc(GL_LESS); // Set depth function back to default
+    
+    // Re-enable culling
+    glEnable(GL_CULL_FACE);
 }
 
 void Renderer::SetupSkybox() {
@@ -224,30 +362,6 @@ void Renderer::BeginScene(Camera& camera) {
 }
 
 void Renderer::EndScene() {
-    // If not in debug mode, render skybox
-    if (!m_DebugNormals && !m_DebugSpecular && m_EnableSkybox) {
-        // Disable culling
-        glDisable(GL_CULL_FACE);
-        
-        // Draw skybox
-        glDepthFunc(GL_LEQUAL); // Change depth function so depth test passes when values are equal to depth buffer's content
-        m_SkyboxShader->Use();
-        glm::mat4 view = glm::mat4(glm::mat3(m_ViewMatrix)); // Remove translation from the view matrix
-        m_SkyboxShader->SetMat4("view", view);
-        m_SkyboxShader->SetMat4("projection", m_ProjectionMatrix);
-        
-        // Skybox cube
-        glBindVertexArray(m_SkyboxVAO);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, m_SkyboxTexture);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glBindVertexArray(0);
-        glDepthFunc(GL_LESS); // Set depth function back to default
-        
-        // Re-enable culling
-        glEnable(GL_CULL_FACE);
-    }
-    
     UnbindFramebuffer();
 }
 

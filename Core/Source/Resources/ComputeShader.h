@@ -1,5 +1,5 @@
-#ifndef SHADER_H
-#define SHADER_H
+#ifndef COMPUTE_SHADER_H
+#define COMPUTE_SHADER_H
 
 #include <string>
 #include <glad/gl.h>
@@ -7,13 +7,12 @@
 
 namespace SockEngine {
 
-class Shader
+class ComputeShader
 {
 public:
     unsigned int ID;
     // Constructor generates the shader on the fly
-    Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr,
-           const char* tessControlPath = nullptr, const char* tessEvalPath = nullptr);
+    ComputeShader(const char* computePath);
     // Activate the shader
     void Use() const;
     // Utility uniform functions

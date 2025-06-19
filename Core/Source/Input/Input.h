@@ -37,6 +37,10 @@ public:
     void UpdateMouseScroll(float xOffset, float yOffset);
     glm::vec2 GetMouseScroll() const { return m_MouseScroll; }
 
+    void StartMouseCapture(GLFWwindow* window, const glm::vec2& viewportMin, const glm::vec2& viewportMax);
+    void EndMouseCapture(GLFWwindow* window);
+    bool IsMouseCaptured() const { return m_MouseCaptured; }
+    
     void ResetDeltas();
 
 private:
@@ -49,6 +53,13 @@ private:
     glm::vec2 m_MouseScroll = {0.0f, 0.0f};
 
     bool m_FirstMouse = true;
+
+    // Mouse capture state
+    bool m_MouseCaptured = false;
+    glm::vec2 m_CaptureStartPosition = {0.0f, 0.0f};
+    glm::vec2 m_ViewportMin = {0.0f, 0.0f};
+    glm::vec2 m_ViewportMax = {0.0f, 0.0f};
+    GLFWwindow* m_CaptureWindow = nullptr;
 };
 
 }

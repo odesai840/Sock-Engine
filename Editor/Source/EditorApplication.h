@@ -21,9 +21,11 @@ private:
     std::unique_ptr<Scene> m_ActiveScene;
 
     // Editor state
+    glm::vec2 m_ViewportMin = {0.0f, 0.0f};
+    glm::vec2 m_ViewportMax = {0.0f, 0.0f};
+    bool m_ViewportBoundsValid = false;
     bool m_ViewportFocused = false;
     bool m_ViewportHovered = false;
-    bool m_ShowAboutWindow = false;
 
     // Editor debug options
     bool m_DebugNormals = false;
@@ -59,6 +61,8 @@ private:
     void DrawInspector();
     void DrawDebugPanel();
     void DrawOutputLog();
+
+    bool m_ShowAboutWindow = false;
 };
 
 }

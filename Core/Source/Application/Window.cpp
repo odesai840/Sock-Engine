@@ -165,8 +165,7 @@ void Window::Init(const std::string& title, uint32_t width, uint32_t height) {
         data.Focused = focused != 0;
     
         // Always unlock cursor when window loses focus
-        if (!focused && data.CursorLocked) {
-            data.CursorLocked = false;
+        if (!focused) {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         }
     });
@@ -197,18 +196,6 @@ void Window::SetVSync(bool enabled) {
 
 bool Window::IsVSync() const {
     return m_Data.VSync;
-}
-
-void Window::SetMouseCursorVisible(bool visible) {
-    m_Data.CursorVisible = visible;
-    glfwSetInputMode(m_Window, GLFW_CURSOR, visible ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_HIDDEN);
-}
-
-void Window::SetMouseCursorLocked(bool locked) {
-    m_Data.CursorLocked = locked;
-    
-    // Lock/unlock cursor
-    glfwSetInputMode(m_Window, GLFW_CURSOR, locked ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 }
 
 }

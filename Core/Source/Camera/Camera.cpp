@@ -47,49 +47,11 @@ void Camera::ProcessKeyboard(Camera_Movement direction, float deltaTime)
     }
 }
 
-// Apply smoothing to rotation values
-void Camera::ApplySmoothing(float& yawOffset, float& pitchOffset) {
-    // Initialize buffers if they're empty
-    if (yawBuffer.size() == 0) {
-        yawBuffer.assign(bufferSize, 0.0f);
-        pitchBuffer.assign(bufferSize, 0.0f);
-    }
-    
-    // Shift values in the buffer
-    for (int i = bufferSize - 1; i > 0; i--) {
-        yawBuffer[i] = yawBuffer[i-1];
-        pitchBuffer[i] = pitchBuffer[i-1];
-    }
-    
-    // Add new values
-    yawBuffer[0] = yawOffset;
-    pitchBuffer[0] = pitchOffset;
-    
-    // Compute smoothed values using weighted average
-    float yawSum = 0.0f;
-    float pitchSum = 0.0f;
-    float weightSum = 0.0f;
-    
-    for (int i = 0; i < bufferSize; i++) {
-        float weight = 1.0f / (i + 1); // More weight to recent values
-        yawSum += yawBuffer[i] * weight;
-        pitchSum += pitchBuffer[i] * weight;
-        weightSum += weight;
-    }
-    
-    // Update the offsets with smoothed values
-    yawOffset = yawSum / weightSum;
-    pitchOffset = pitchSum / weightSum;
-}
-
 // Processes input received from a mouse input system. Expects the offset value in both the x and y direction.
 void Camera::ProcessMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch)
 {
     xoffset *= MouseSensitivity;
     yoffset *= MouseSensitivity;
-    
-    // Apply smoothing
-    ApplySmoothing(xoffset, yoffset);
 
     Yaw += xoffset;
     Pitch += yoffset;

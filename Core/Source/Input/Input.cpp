@@ -72,25 +72,81 @@ bool Input::GetMouseButtonReleased(int button) {
 }
 
 void Input::UpdateMousePosition(float x, float y) {
-    // Skip first movement to avoid a large jump
+    m_LastMousePosition = m_MousePosition;
+    m_MousePosition = {x, y};
+    
     if (m_FirstMouse) {
-        m_LastMousePosition = {x, y};
-        m_MousePosition = {x, y};
+        m_MouseDelta = {0.0f, 0.0f};
         m_FirstMouse = false;
         return;
     }
     
-    // Store last position before updating
-    m_LastMousePosition = m_MousePosition;
-    m_MousePosition = {x, y};
-    
     // Calculate delta
-    m_MouseDelta.x = m_MousePosition.x - m_LastMousePosition.x;
-    m_MouseDelta.y = m_MousePosition.y - m_LastMousePosition.y;
+    m_MouseDelta = {
+        m_MousePosition.x - m_LastMousePosition.x,
+        m_MousePosition.y - m_LastMousePosition.y
+    };
+    
+    // If mouse is captured, constrain it to viewport bounds
+    if (m_MouseCaptured && m_CaptureWindow) {
+        glm::vec2 center = (m_ViewportMin + m_ViewportMax) * 0.5f;
+        glm::vec2 size = m_ViewportMax - m_ViewportMin;
+        
+        // Check if mouse is getting close to viewport edges
+        bool needsRecenter = false;
+        
+        if (m_MousePosition.x <= m_ViewportMin.x + 10.0f || 
+            m_MousePosition.x >= m_ViewportMax.x - 10.0f ||
+            m_MousePosition.y <= m_ViewportMin.y + 10.0f || 
+            m_MousePosition.y >= m_ViewportMax.y - 10.0f) {
+            needsRecenter = true;
+            }
+        
+        if (needsRecenter) {
+            // Move cursor back to center of viewport
+            glfwSetCursorPos(m_CaptureWindow, center.x, center.y);
+            m_MousePosition = center;
+            m_LastMousePosition = center;
+        }
+    }
 }
 
 void Input::UpdateMouseScroll(float xOffset, float yOffset) {
     m_MouseScroll = {xOffset, yOffset};
+}
+
+void Input::StartMouseCapture(GLFWwindow* window, const glm::vec2& viewportMin, const glm::vec2& viewportMax) {
+    if (m_MouseCaptured) return;
+    
+    m_MouseCaptured = true;
+    m_CaptureWindow = window;
+    m_ViewportMin = viewportMin;
+    m_ViewportMax = viewportMax;
+    m_CaptureStartPosition = m_MousePosition;
+    
+    // Disable cursor
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    
+    // Reset delta to prevent initial jump
+    m_MouseDelta = {0.0f, 0.0f};
+}
+
+void Input::EndMouseCapture(GLFWwindow* window) {
+    if (!m_MouseCaptured) return;
+    
+    m_MouseCaptured = false;
+    m_CaptureWindow = nullptr;
+    
+    // Show cursor again
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    
+    // Restore cursor to original position
+    glfwSetCursorPos(window, m_CaptureStartPosition.x, m_CaptureStartPosition.y);
+    m_MousePosition = m_CaptureStartPosition;
+    m_LastMousePosition = m_CaptureStartPosition;
+    
+    // Reset delta
+    m_MouseDelta = {0.0f, 0.0f};
 }
 
 void Input::ResetDeltas()

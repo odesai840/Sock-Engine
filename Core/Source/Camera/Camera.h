@@ -66,9 +66,6 @@ private:
     
     // Calculates the front vector from the Camera's (updated) Euler Angles
     void UpdateCameraVectors();
-    
-    // Applies smoothing to rotation
-    void ApplySmoothing(float& yawOffset, float& pitchOffset);
 };
 
 }

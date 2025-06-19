@@ -26,12 +26,7 @@ public:
 
     void SetVSync(bool enabled);
     bool IsVSync() const;
-
-    // Mouse cursor control
-    void SetMouseCursorVisible(bool visible);
-    void SetMouseCursorLocked(bool locked);
-    bool IsMouseCursorVisible() const { return m_Data.CursorVisible; }
-    bool IsMouseCursorLocked() const { return m_Data.CursorLocked; }
+    
     bool IsFocused() const { return m_Data.Focused; }
 
 private:
@@ -44,8 +39,6 @@ private:
         std::string Title;
         uint32_t Width, Height;
         bool VSync;
-        bool CursorVisible = true;
-        bool CursorLocked = false;
         bool Focused = true;
         EventCallbackFn EventCallback;
     };

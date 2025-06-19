@@ -42,71 +42,63 @@ EditorApplication::~EditorApplication() {
 }
 
 void EditorApplication::OnUpdate(float deltaTime) {
-    // Handle right mouse button state
+    // Handle right mouse button state for camera
     static bool wasRightMouseButtonDown = false;
     bool isRightMouseButtonDown = m_Input.GetMouseButtonHeld(GLFW_MOUSE_BUTTON_RIGHT);
 
-    // Make sure cursor is unlocked if window is not focused
-    if (!GetWindow().IsFocused() && GetWindow().IsMouseCursorLocked()) {
-        GetWindow().SetMouseCursorLocked(false);
+    // Check if we should start/stop mouse capture
+    if (m_ViewportFocused && m_ViewportBoundsValid && GetWindow().IsFocused()) {
+        if (isRightMouseButtonDown && !wasRightMouseButtonDown) {
+            // Start mouse capture when right-clicking in viewport
+            m_Input.StartMouseCapture(GetWindow().GetNativeWindow(), m_ViewportMin, m_ViewportMax);
+        }
     }
     
-    // Handle input for camera when viewport is focused
-    if (m_ViewportFocused) {
+    if (!isRightMouseButtonDown && wasRightMouseButtonDown) {
+        // Stop mouse capture when releasing right mouse button
+        m_Input.EndMouseCapture(GetWindow().GetNativeWindow());
+    }
+    
+    // Also stop capture if we lose focus
+    if (!GetWindow().IsFocused() && m_Input.IsMouseCaptured()) {
+        m_Input.EndMouseCapture(GetWindow().GetNativeWindow());
+    }
+
+    // Handle camera movement when mouse is captured
+    if (m_Input.IsMouseCaptured() && isRightMouseButtonDown) {
         Camera& camera = m_ActiveScene->GetCamera();
         
-        // Right mouse button state changes
-        if (isRightMouseButtonDown && !wasRightMouseButtonDown) {
-            // Just pressed down - lock cursor
-            GetWindow().SetMouseCursorLocked(true);
-            // Reset any unexpected delta that might occur
-            m_Input.ResetDeltas();
+        // Keyboard movement
+        if (m_Input.GetKeyHeld(GLFW_KEY_W)) {
+            camera.ProcessKeyboard(FORWARD, deltaTime);
         }
-        else if (!isRightMouseButtonDown && wasRightMouseButtonDown) {
-            // Just released - unlock cursor
-            GetWindow().SetMouseCursorLocked(false);
+        if (m_Input.GetKeyHeld(GLFW_KEY_A)) {
+            camera.ProcessKeyboard(LEFT, deltaTime);
+        }
+        if (m_Input.GetKeyHeld(GLFW_KEY_S)) {
+            camera.ProcessKeyboard(BACKWARD, deltaTime);
+        }
+        if (m_Input.GetKeyHeld(GLFW_KEY_D)) {
+            camera.ProcessKeyboard(RIGHT, deltaTime);
         }
 
-        // Editor camera movement and rotation
-        if (isRightMouseButtonDown && GetWindow().IsFocused()) {
-            // Keyboard input for movement
-            if (m_Input.GetKeyHeld(GLFW_KEY_W)) {
-                camera.ProcessKeyboard(FORWARD, deltaTime);
-            }
-            if (m_Input.GetKeyHeld(GLFW_KEY_A)) {
-                camera.ProcessKeyboard(LEFT, deltaTime);
-            }
-            if (m_Input.GetKeyHeld(GLFW_KEY_S)) {
-                camera.ProcessKeyboard(BACKWARD, deltaTime);
-            }
-            if (m_Input.GetKeyHeld(GLFW_KEY_D)) {
-                camera.ProcessKeyboard(RIGHT, deltaTime);
-            }
-
-            // Camera rotation with mouse
-            glm::vec2 mouseDelta = m_Input.GetMouseDelta();
-            
-            // Only process significant motion
-            if (glm::length(mouseDelta) > 0.01f) {
-                float sensitivity = 0.1f;
-                camera.ProcessMouseMovement(mouseDelta.x * sensitivity, -mouseDelta.y * sensitivity);
-            }
+        // Mouse look
+        glm::vec2 mouseDelta = m_Input.GetMouseDelta();
+        if (glm::length(mouseDelta) > 0.01f) {
+            float sensitivity = 0.1f;
+            camera.ProcessMouseMovement(mouseDelta.x * sensitivity, -mouseDelta.y * sensitivity);
         }
-        
-        // Camera zoom with scroll wheel
+    }
+    
+    // Scroll wheel zoom (works when viewport is hovered, even without mouse capture)
+    if ((m_ViewportFocused || m_ViewportHovered) && !m_Input.IsMouseCaptured()) {
         glm::vec2 scrollDelta = m_Input.GetMouseScroll();
         if (scrollDelta.y != 0.0f) {
+            Camera& camera = m_ActiveScene->GetCamera();
             camera.ProcessMouseScroll(scrollDelta.y);
         }
     }
-    else {
-        // If viewport is not focused, ensure cursor is unlocked
-        if (GetWindow().IsMouseCursorLocked()) {
-            GetWindow().SetMouseCursorLocked(false);
-        }
-    }
     
-    // Update right mouse button state for next frame
     wasRightMouseButtonDown = isRightMouseButtonDown;
     
     // Update scene
@@ -259,6 +251,12 @@ void EditorApplication::DrawViewport() {
     
     // Get the size of the viewport
     ImVec2 viewportSize = ImGui::GetContentRegionAvail();
+    ImVec2 viewportPos = ImGui::GetCursorScreenPos();
+    
+    // Update viewport bounds for mouse capture
+    m_ViewportMin = {viewportPos.x, viewportPos.y};
+    m_ViewportMax = {viewportPos.x + viewportSize.x, viewportPos.y + viewportSize.y};
+    m_ViewportBoundsValid = (viewportSize.x > 10 && viewportSize.y > 10);
     
     // Resize the renderer's viewport if needed
     m_Renderer->SetViewportSize(static_cast<uint32_t>(viewportSize.x), static_cast<uint32_t>(viewportSize.y));
@@ -267,8 +265,8 @@ void EditorApplication::DrawViewport() {
     ImVec2 pos = ImGui::GetCursorScreenPos();
     ImGui::GetWindowDrawList()->AddImage(
         (void*)m_Renderer->GetFramebufferTexture(),
-        ImVec2(pos.x, pos.y),
-        ImVec2(pos.x + viewportSize.x, pos.y + viewportSize.y),
+        ImVec2(viewportPos.x, viewportPos.y),
+        ImVec2(viewportPos.x + viewportSize.x, viewportPos.y + viewportSize.y),
         ImVec2(0, 1),
         ImVec2(1, 0)
     );
@@ -689,7 +687,7 @@ void EditorApplication::DrawDebugPanel() {
                     m_Input.GetMouseButtonHeld(GLFW_MOUSE_BUTTON_RIGHT) ? "Down" : "Up");
     
         // Cursor lock state
-        ImGui::Text("Cursor Locked: %s", GetWindow().IsMouseCursorLocked() ? "Yes" : "No");
+        ImGui::Text("Cursor Locked: %s", m_Input.IsMouseCaptured() ? "Yes" : "No");
     }
     
     ImGui::End();

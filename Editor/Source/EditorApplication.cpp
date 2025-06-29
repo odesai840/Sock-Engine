@@ -13,7 +13,7 @@ EditorApplication::EditorApplication()
 {
     // Initialize renderer
     m_Renderer = std::make_unique<Renderer>();
-    m_Renderer->Initialize(1920, 1080);
+    m_Renderer->Initialize();
     
     // Create a default scene
     m_ActiveScene = std::make_unique<Scene>("New Scene");
@@ -257,9 +257,6 @@ void EditorApplication::DrawViewport() {
     m_ViewportMin = {viewportPos.x, viewportPos.y};
     m_ViewportMax = {viewportPos.x + viewportSize.x, viewportPos.y + viewportSize.y};
     m_ViewportBoundsValid = (viewportSize.x > 10 && viewportSize.y > 10);
-    
-    // Resize the renderer's viewport if needed
-    m_Renderer->SetViewportSize(static_cast<uint32_t>(viewportSize.x), static_cast<uint32_t>(viewportSize.y));
     
     // Display the rendered scene in the viewport
     ImVec2 pos = ImGui::GetCursorScreenPos();
@@ -645,6 +642,30 @@ void EditorApplication::DrawDebugPanel() {
     }
     
     ImGui::Separator();
+
+    // Render Resolution Settings
+    if (ImGui::CollapsingHeader("Render Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Text("Current: %dx%d", m_Renderer->GetRenderWidth(), m_Renderer->GetRenderHeight());
+        
+        if (ImGui::BeginCombo("Render Resolution", m_ResolutionOptions[m_SelectedResolutionIndex].name)) {
+            for (int i = 0; i < m_ResolutionOptions.size(); i++) {
+                bool isSelected = (m_SelectedResolutionIndex == i);
+                if (ImGui::Selectable(m_ResolutionOptions[i].name, isSelected)) {
+                    m_SelectedResolutionIndex = i;
+                    
+                    auto& option = m_ResolutionOptions[i];
+                    m_Renderer->SetRenderResolution(option.width, option.height);
+                }
+                
+                if (isSelected) {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
+    }
+    
+    ImGui::Separator();
     
     // Debug visualization options
     if (ImGui::CollapsingHeader("Debug Visualizations", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -695,7 +716,7 @@ void EditorApplication::DrawDebugPanel() {
 
 void EditorApplication::DrawOutputLog() {
     ImGui::Begin("Output Log");
-    // In a full implementation, this would display engine logs
+    // Currently, there is no logging system, so the window will just be empty for now.
     ImGui::End();
 }
 

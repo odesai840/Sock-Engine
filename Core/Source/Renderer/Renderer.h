@@ -17,16 +17,21 @@ public:
     Renderer();
     ~Renderer();
 
-    void Initialize(uint32_t viewportWidth, uint32_t viewportHeight);
+    void Initialize();
     void Shutdown();
     
     // Main rendering method
     void RenderScene(Scene& scene, Camera& camera);
+
+    // Render settings
+    void SetRenderResolution(uint32_t width, uint32_t height);
+    uint32_t GetRenderWidth() const { return m_RenderWidth; }
+    uint32_t GetRenderHeight() const { return m_RenderHeight; }
     
-    // Individual model rendering (for custom render passes)
+    // Model rendering
     void RenderModel(Model& model, const glm::mat4& transform, Shader& shader);
 
-    void SetViewportSize(uint32_t width, uint32_t height);
+    // Debug states
     void EnableDebugNormals(bool enable) { m_DebugNormals = enable; }
     void EnableDebugSpecular(bool enable) { m_DebugSpecular = enable; }
 
@@ -53,7 +58,12 @@ public:
     glm::vec3 GetDirectionalLight() const { return m_DirectionalLightDir; }
 
 private:
+    // Viewport
+    uint32_t m_RenderWidth = 1920;
+    uint32_t m_RenderHeight = 1080;
     uint32_t m_ViewportWidth, m_ViewportHeight;
+
+    // Debug states
     bool m_DebugNormals = false;
     bool m_DebugSpecular = false;
     

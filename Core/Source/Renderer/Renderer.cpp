@@ -18,9 +18,10 @@ Renderer::Renderer()
 Renderer::~Renderer() {
 }
 
-void Renderer::Initialize(uint32_t viewportWidth, uint32_t viewportHeight) {
-    m_ViewportWidth = viewportWidth;
-    m_ViewportHeight = viewportHeight;
+void Renderer::Initialize() {
+    // Initialize viewport size to render size
+    m_ViewportWidth = m_RenderWidth;
+    m_ViewportHeight = m_RenderHeight;
     
     // Enable OpenGL states
     glEnable(GL_DEPTH_TEST);
@@ -352,12 +353,12 @@ void Renderer::BeginScene(Camera& camera) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     // Set viewport
-    glViewport(0, 0, m_ViewportWidth, m_ViewportHeight);
+    glViewport(0, 0, m_RenderWidth, m_RenderHeight);
     
     // Store view and projection matrices
     m_ViewMatrix = camera.GetViewMatrix();
     m_ProjectionMatrix = glm::perspective(glm::radians(camera.Zoom), 
-                                          (float)m_ViewportWidth / (float)m_ViewportHeight, 
+                                          (float)m_RenderWidth / (float)m_RenderHeight, 
                                           0.1f, 50000.0f);
 }
 
@@ -405,10 +406,13 @@ void Renderer::LoadSkybox(const std::vector<std::string>& skyboxFaces) {
     m_SkyboxTexture = LoadCubemap(skyboxFaces);
 }
 
-void Renderer::SetViewportSize(uint32_t width, uint32_t height) {
-    m_ViewportWidth = width;
-    m_ViewportHeight = height;
-    RescaleFramebuffer(width, height);
+void Renderer::SetRenderResolution(uint32_t width, uint32_t height) {
+    if (m_RenderWidth != width || m_RenderHeight != height) {
+        m_RenderWidth = width;
+        m_RenderHeight = height;
+        
+        RescaleFramebuffer(width, height);
+    }
 }
 
 unsigned int Renderer::LoadCubemap(std::vector<std::string> faces) {

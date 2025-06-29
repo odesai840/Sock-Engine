@@ -47,6 +47,24 @@ private:
         std::vector<MenuItem> items;
     };
 
+    // Resolution settings
+    int m_SelectedResolutionIndex = 1;
+    
+    struct ResolutionOption {
+        const char* name;
+        uint32_t width;
+        uint32_t height;
+    };
+    
+    std::vector<ResolutionOption> m_ResolutionOptions = {
+        {"1280x720", 1280, 720},
+        {"1920x1080", 1920, 1080},
+        {"2560x1440", 2560, 1440},
+        {"3840x2160", 3840, 2160},
+        {"2560x1080", 2560, 1080},
+        {"3440x1440", 3440, 1440}
+    };
+
     // Editor windows
     void ShowAboutWindow();
     void DrawAboutWindow();

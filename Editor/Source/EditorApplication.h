@@ -2,6 +2,7 @@
 #define EDITOR_APPLICATION_H
 
 #include "Application/Application.h"
+#include "imgui/imgui.h"
 #include "Renderer/Renderer.h"
 #include "Scene/Scene.h"
 
@@ -64,6 +65,9 @@ private:
         {"2560x1080", 2560, 1080},
         {"3440x1440", 3440, 1440}
     };
+
+    // Editor application window
+    void MinimizeWindow();
 
     // Editor windows
     void ShowAboutWindow();

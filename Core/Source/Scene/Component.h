@@ -3,9 +3,12 @@
 
 #include <entt/entt.hpp>
 #include "Resources/Model.h"
+#include "Resources/Animation.h"
+#include "Resources/AnimData.h"
 #include <string>
 #include <memory>
 #include <vector>
+#include <map>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
@@ -59,6 +62,65 @@ struct ModelComponent {
     float shininess = 32.0f;
     bool castShadows = true;
     bool receiveShadows = true;
+};
+
+// Animator component for skeletal animation
+struct AnimatorComponent {
+    // Animation data
+    std::shared_ptr<Animation> currentAnimation;
+    std::unique_ptr<Animator> animator;
+    std::map<std::string, std::shared_ptr<Animation>> animations; // Named animations
+    
+    // Bone information extracted from model
+    BoneInfoMap boneInfoMap;
+    
+    // Playback state
+    bool isPlaying = true;
+    bool isLooping = true;
+    float playbackSpeed = 1.0f;
+    float currentTime = 0.0f;
+    std::string currentAnimationName = "";
+    
+    // Animation file paths for editor
+    std::vector<std::string> animationPaths;
+    int selectedAnimationIndex = 0;
+    
+    // Constructor
+    AnimatorComponent() = default;
+    
+    // Initialize with a model and animation
+    void Initialize(std::shared_ptr<Model> model, const std::string& animationPath);
+    
+    // Load additional animations
+    void LoadAnimation(const std::string& name, const std::string& path);
+    
+    // Playback controls
+    void Play();
+    void Pause();
+    void Stop();
+    void SetLooping(bool loop);
+    void SetPlaybackSpeed(float speed);
+    
+    // Animation switching
+    void PlayAnimation(const std::string& animationName);
+    bool HasAnimation(const std::string& name) const;
+    
+    // Update method (called each frame)
+    void Update(float deltaTime);
+    
+    // Get bone matrices for rendering
+    std::vector<glm::mat4> GetBoneMatrices() const;
+    
+    // Get animation info
+    float GetDuration() const;
+    float GetCurrentTime() const;
+    bool IsPlaying() const { return isPlaying; }
+    bool IsLooping() const { return isLooping; }
+    float GetPlaybackSpeed() const { return playbackSpeed; }
+    
+private:
+    void UpdateAnimator(float deltaTime);
+    void ExtractBoneInfoFromModel(std::shared_ptr<Model> model);
 };
 
 }

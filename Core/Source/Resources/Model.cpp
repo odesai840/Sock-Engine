@@ -2,6 +2,7 @@
 #include <iostream>
 #include <map>
 #include <SOIL2/SOIL2.h>
+#include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 
 namespace SockEngine {
@@ -70,6 +71,8 @@ Mesh Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
     for (unsigned int i = 0; i < mesh->mNumVertices; i++)
     {
         Vertex vertex;
+        // Initialize bone data to default values
+        SetVertexBoneDataToDefault(vertex);
         glm::vec3 vector; // We declare a placeholder vector since assimp uses its own vector class that doesn't directly convert to glm's vec3 class so we transfer the data to this placeholder glm::vec3 first.
         // Positions
         vector.x = mesh->mVertices[i].x;
@@ -143,6 +146,9 @@ Mesh Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
     // 5. Opacity maps
     std::vector<Texture> opacityMaps = LoadMaterialTextures(scene, material, aiTextureType_OPACITY, "texture_opacity");
     textures.insert(textures.end(), opacityMaps.begin(), opacityMaps.end());
+
+    // Extract bone weight information for vertices
+    ExtractBoneWeightForVertices(vertices, mesh, scene);
     
     // Return a mesh object created from the extracted mesh data
     return Mesh(vertices, indices, textures);
@@ -292,6 +298,74 @@ void Model::UnloadTextures()
         glDeleteTextures(1, &texture.id);
     }
     textures_loaded.clear();
+}
+
+void Model::SetVertexBoneDataToDefault(Vertex& vertex)
+{
+    for (int i = 0; i < MAX_BONE_INFLUENCE; i++)
+    {
+        vertex.m_BoneIDs[i] = -1;
+        vertex.m_Weights[i] = 0.0f;
+    }
+}
+
+void Model::SetVertexBoneData(Vertex& vertex, int boneID, float weight)
+{
+    for (int i = 0; i < MAX_BONE_INFLUENCE; ++i)
+    {
+        if (vertex.m_BoneIDs[i] < 0)
+        {
+            vertex.m_Weights[i] = weight;
+            vertex.m_BoneIDs[i] = boneID;
+            break;
+        }
+    }
+}
+
+void Model::ExtractBoneWeightForVertices(std::vector<Vertex>& vertices, aiMesh* mesh, const aiScene* scene)
+{
+    for (int boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
+    {
+        int boneID = -1;
+        std::string boneName = mesh->mBones[boneIndex]->mName.C_Str();
+        
+        if (m_BoneInfoMap.find(boneName) == m_BoneInfoMap.end())
+        {
+            BoneInfo newBoneInfo;
+            newBoneInfo.id = m_BoneCounter;
+            newBoneInfo.offset = glm::mat4(
+                mesh->mBones[boneIndex]->mOffsetMatrix.a1, mesh->mBones[boneIndex]->mOffsetMatrix.b1, mesh->mBones[boneIndex]->mOffsetMatrix.c1, mesh->mBones[boneIndex]->mOffsetMatrix.d1,
+                mesh->mBones[boneIndex]->mOffsetMatrix.a2, mesh->mBones[boneIndex]->mOffsetMatrix.b2, mesh->mBones[boneIndex]->mOffsetMatrix.c2, mesh->mBones[boneIndex]->mOffsetMatrix.d2,
+                mesh->mBones[boneIndex]->mOffsetMatrix.a3, mesh->mBones[boneIndex]->mOffsetMatrix.b3, mesh->mBones[boneIndex]->mOffsetMatrix.c3, mesh->mBones[boneIndex]->mOffsetMatrix.d3,
+                mesh->mBones[boneIndex]->mOffsetMatrix.a4, mesh->mBones[boneIndex]->mOffsetMatrix.b4, mesh->mBones[boneIndex]->mOffsetMatrix.c4, mesh->mBones[boneIndex]->mOffsetMatrix.d4
+            );
+            m_BoneInfoMap[boneName] = newBoneInfo;
+            boneID = m_BoneCounter;
+            m_BoneCounter++;
+        }
+        else
+        {
+            boneID = m_BoneInfoMap[boneName].id;
+        }
+        
+        if (boneID == -1) {
+            std::cout << "ERROR: Could not find bone ID for bone: " << boneName << std::endl;
+            continue;
+        }
+
+        auto weights = mesh->mBones[boneIndex]->mWeights;
+        int numWeights = mesh->mBones[boneIndex]->mNumWeights;
+
+        for (int weightIndex = 0; weightIndex < numWeights; ++weightIndex)
+        {
+            int vertexId = weights[weightIndex].mVertexId;
+            float weight = weights[weightIndex].mWeight;
+            
+            if (vertexId < vertices.size()) {
+                SetVertexBoneData(vertices[vertexId], boneID, weight);
+            }
+        }
+    }
 }
 
 }

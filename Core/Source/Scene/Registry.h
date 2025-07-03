@@ -18,8 +18,7 @@ public:
     bool IsValid(entt::entity entity) const;
 
     // Get the underlying EnTT registry
-    entt::registry& GetRegistry() { return m_Registry; }
-    const entt::registry& GetRegistry() const { return m_Registry; }
+    entt::registry& GetNativeRegistry() { return m_Registry; }
 
     // Name management
     void SetName(entt::entity entity, const std::string& name);

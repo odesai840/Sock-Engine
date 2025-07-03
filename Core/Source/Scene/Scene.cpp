@@ -10,7 +10,7 @@ Scene::Scene(const std::string& name)
     // Create the root entity
     entt::entity rootEntityHandle = m_Registry.CreateEntity("Scene Root");
     m_RootEntity = Entity(rootEntityHandle, &m_Registry);
-    m_Registry.GetRegistry().emplace<RelationshipComponent>(rootEntityHandle);
+    m_Registry.GetNativeRegistry().emplace<RelationshipComponent>(rootEntityHandle);
 }
 
 Scene::~Scene() {
@@ -18,15 +18,18 @@ Scene::~Scene() {
 }
 
 void Scene::OnUpdate(float deltaTime) {
-    // Update all entities with TransformComponent and ActiveComponent
-    auto view = m_Registry.GetRegistry().view<TransformComponent, ActiveComponent>();
+    // Update all entities with an ActiveComponent
+    auto view = m_Registry.GetNativeRegistry().view<ActiveComponent>();
     for (auto entity : view) {
         auto& active = view.get<ActiveComponent>(entity);
         
         if (active.active) {
-            auto& transform = view.get<TransformComponent>(entity);
-            // Perform any per-entity updates here
-            // For example: animation updates, physics updates, etc.
+            // Scan and update each updatable component type that exists on this entity.
+            // Currently, only Animators are updatable.
+            if (m_Registry.GetNativeRegistry().all_of<AnimatorComponent>(entity)) {
+                auto& animator = m_Registry.GetNativeRegistry().get<AnimatorComponent>(entity);
+                animator.Update(deltaTime);
+            }
         }
     }
 }
@@ -44,11 +47,11 @@ Entity Scene::CreateEntity(const std::string& name, Entity parent) {
     entt::entity entityHandle = m_Registry.CreateEntity(uniqueName);
     
     // Add default components
-    auto& transform = m_Registry.GetRegistry().emplace<TransformComponent>(entityHandle);
+    auto& transform = m_Registry.GetNativeRegistry().emplace<TransformComponent>(entityHandle);
     transform.owner = entityHandle;
     
-    m_Registry.GetRegistry().emplace<ActiveComponent>(entityHandle);
-    m_Registry.GetRegistry().emplace<RelationshipComponent>(entityHandle);
+    m_Registry.GetNativeRegistry().emplace<ActiveComponent>(entityHandle);
+    m_Registry.GetNativeRegistry().emplace<RelationshipComponent>(entityHandle);
     
     // Create the entity
     Entity entity(entityHandle, &m_Registry);
@@ -109,8 +112,8 @@ Entity Scene::DuplicateEntityHierarchy(Entity entity, Entity parent) {
         auto& srcModel = entity.GetComponent<ModelComponent>();
         
         auto& dstModel = newEntity.HasComponent<ModelComponent>() ? 
-                           newEntity.GetComponent<ModelComponent>() : 
-                           newEntity.AddComponent<ModelComponent>();
+                         newEntity.GetComponent<ModelComponent>() :
+                         newEntity.AddComponent<ModelComponent>();
         
         dstModel.shininess = srcModel.shininess;
         dstModel.castShadows = srcModel.castShadows;
@@ -119,6 +122,19 @@ Entity Scene::DuplicateEntityHierarchy(Entity entity, Entity parent) {
         // Share the model resource
         dstModel.model = srcModel.model;
         dstModel.modelPath = srcModel.modelPath;
+    }
+
+    // Copy animator component
+    if (entity.HasComponent<AnimatorComponent>()) {
+        auto& srcAnimator = entity.GetComponent<AnimatorComponent>();
+
+        auto& dstAnimator = newEntity.HasComponent<AnimatorComponent>() ?
+                            newEntity.GetComponent<AnimatorComponent>() :
+                            newEntity.AddComponent<AnimatorComponent>();
+
+        dstAnimator.boneInfoMap = srcAnimator.boneInfoMap;
+        dstAnimator.animationPaths = srcAnimator.animationPaths;
+        dstAnimator.animations = srcAnimator.animations;
     }
     
     // Set the parent
@@ -225,7 +241,7 @@ void Scene::DestroyEntity(Entity entity) {
     m_Registry.DestroyEntity(entity);
 }
 
-Entity Scene::LoadModel(const std::string& filepath, const glm::vec3& position, const glm::vec3& scale) {
+Entity Scene::LoadModel(const std::string& filepath, const std::string& animation, const glm::vec3& position, const glm::vec3& scale) {
     // Get model name
     std::string name = filepath.substr(filepath.find_last_of("/\\") + 1);
 
@@ -249,6 +265,11 @@ Entity Scene::LoadModel(const std::string& filepath, const glm::vec3& position, 
     auto& modelComponent = entity.AddComponent<ModelComponent>();
     modelComponent.model = std::make_shared<Model>(filepath);
     modelComponent.modelPath = filepath;
+
+    if (!animation.empty()) {
+        auto& animatorComponent = entity.AddComponent<AnimatorComponent>();
+        animatorComponent.Initialize(modelComponent.model, animation);
+    }
     
     return entity;
 }

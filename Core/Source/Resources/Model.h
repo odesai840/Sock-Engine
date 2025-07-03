@@ -3,9 +3,10 @@
 
 #include "Mesh.h"
 #include "Shader.h"
+#include "AnimData.h"
 #include <string>
 #include <vector>
-#include <assimp/Importer.hpp>
+#include <map>
 #include <assimp/scene.h>
 
 namespace SockEngine {
@@ -19,6 +20,10 @@ public:
     std::string directory;
     bool gammaCorrection;
 
+    // Animation data
+    std::map<std::string, BoneInfo> m_BoneInfoMap;
+    int m_BoneCounter = 0;
+
     // Constructor, expects a filepath to a 3D model.
     Model(std::string const& path, bool gamma = false);
 
@@ -26,6 +31,10 @@ public:
 
     // Draws the model, and thus all its meshes
     void Draw(Shader& shader);
+
+    // Animation support
+    auto& GetBoneInfoMap() { return m_BoneInfoMap; }
+    int& GetBoneCount() { return m_BoneCounter; }
 
 private:
     // Loads a model with supported ASSIMP extensions from file and stores the resulting meshes in the meshes vector.
@@ -43,6 +52,11 @@ private:
     unsigned int TextureFromFile(const char* path, const std::string& dir, bool gamma = false);
 
     void UnloadTextures();
+
+    // Animation support methods
+    void SetVertexBoneDataToDefault(Vertex& vertex);
+    void SetVertexBoneData(Vertex& vertex, int boneID, float weight);
+    void ExtractBoneWeightForVertices(std::vector<Vertex>& vertices, aiMesh* mesh, const aiScene* scene);
 };
 
 }

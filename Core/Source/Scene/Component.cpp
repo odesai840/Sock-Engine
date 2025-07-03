@@ -1,4 +1,5 @@
 #include "Component.h"
+#include <iostream>
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace SockEngine {
@@ -121,6 +122,171 @@ glm::quat TransformComponent::GetWorldRotation(const entt::registry& registry) c
     }
     
     return worldRotation;
+}
+
+void AnimatorComponent::Initialize(std::shared_ptr<Model> model, const std::string& animationPath) {
+    if (!model) {
+        std::cout << "ERROR: Cannot initialize AnimatorComponent without a valid model" << std::endl;
+        return;
+    }
+    
+    try {
+        // Extract bone information from the model
+        ExtractBoneInfoFromModel(model);
+        
+        if (boneInfoMap.empty()) {
+            std::cout << "WARNING: No bone information found in model. Model may not be rigged for animation." << std::endl;
+        }
+        
+        // Load the animation using the extracted bone info
+        currentAnimation = std::make_shared<Animation>(animationPath, boneInfoMap);
+        
+        // Create the animator
+        animator = std::make_unique<Animator>(currentAnimation.get());
+        
+        // Store the animation in map
+        std::string animationName = "Default";
+        animations[animationName] = currentAnimation;
+        currentAnimationName = animationName;
+        
+        // Store the path for editor
+        animationPaths.push_back(animationPath);
+    }
+    catch (const std::exception& e) {
+        std::cout << "ERROR: Failed to initialize AnimatorComponent: " << e.what() << std::endl;
+    }
+}
+
+void AnimatorComponent::LoadAnimation(const std::string& name, const std::string& path) {
+    if (boneInfoMap.empty()) {
+        std::cout << "ERROR: Cannot load animation without bone information. Initialize with a model first." << std::endl;
+        return;
+    }
+    
+    try {
+        auto animation = std::make_shared<Animation>(path, boneInfoMap);
+        animations[name] = animation;
+        animationPaths.push_back(path);
+    }
+    catch (const std::exception& e) {
+        std::cout << "ERROR: Failed to load animation '" << name << "': " << e.what() << std::endl;
+    }
+}
+
+void AnimatorComponent::Play() {
+    if (animator && animator->m_HasEnded) {
+        Stop();  // Reset everything to beginning
+    }
+    
+    isPlaying = true;
+    if (animator) {
+        animator->m_HasEnded = false;  // Reset end state when manually playing
+    }
+}
+
+void AnimatorComponent::Pause() {
+    isPlaying = false;
+}
+
+void AnimatorComponent::Stop() {
+    isPlaying = false;
+    currentTime = 0.0f;
+    if (animator) {
+        animator->m_CurrentTime = 0.0f;
+        animator->m_HasEnded = false;
+    }
+}
+
+void AnimatorComponent::SetLooping(bool loop) {
+    isLooping = loop;
+}
+
+void AnimatorComponent::SetPlaybackSpeed(float speed) {
+    playbackSpeed = glm::max(0.0f, speed); // Ensure non-negative speed
+}
+
+void AnimatorComponent::PlayAnimation(const std::string& animationName) {
+    auto it = animations.find(animationName);
+    if (it != animations.end()) {
+        currentAnimation = it->second;
+        currentAnimationName = animationName;
+        
+        if (animator) {
+            animator->PlayAnimation(currentAnimation.get());
+        }
+        
+        currentTime = 0.0f;
+        isPlaying = true;
+    }
+    else {
+        std::cout << "WARNING: Animation '" << animationName << "' not found" << std::endl;
+    }
+}
+
+bool AnimatorComponent::HasAnimation(const std::string& name) const {
+    return animations.find(name) != animations.end();
+}
+
+void AnimatorComponent::Update(float deltaTime) {
+    if (!isPlaying || !animator || !currentAnimation) {
+        return;
+    }
+    
+    // Apply playback speed
+    float scaledDeltaTime = deltaTime * playbackSpeed;
+    
+    // Update the animator
+    UpdateAnimator(scaledDeltaTime);
+    
+    // Handle time display and playback state
+    if (isLooping) {
+        // For looping animations, just use the animator's time
+        currentTime = animator->m_CurrentTime;
+    } else {
+        // For non-looping animations, check if it has ended
+        if (animator->m_HasEnded) {
+            currentTime = GetDuration();  // Show full duration in UI
+            isPlaying = false;            // Stop playback
+        } else {
+            currentTime = animator->m_CurrentTime;  // Show current time
+        }
+    }
+}
+
+std::vector<glm::mat4> AnimatorComponent::GetBoneMatrices() const {
+    if (animator) {
+        return animator->GetFinalBoneMatrices();
+    }
+    
+    // Return identity matrices if no animator
+    std::vector<glm::mat4> identityMatrices(100, glm::mat4(1.0f));
+    return identityMatrices;
+}
+
+float AnimatorComponent::GetDuration() const {
+    if (currentAnimation) {
+        return currentAnimation->m_Duration;
+    }
+    return 0.0f;
+}
+
+float AnimatorComponent::GetCurrentTime() const {
+    return currentTime;
+}
+
+void AnimatorComponent::UpdateAnimator(float deltaTime) {
+    if (animator) {
+        animator->UpdateAnimation(deltaTime, isLooping);
+    }
+}
+
+void AnimatorComponent::ExtractBoneInfoFromModel(std::shared_ptr<Model> model) {
+    if (!model) {
+        return;
+    }
+
+    // Copy bone information from the model
+    boneInfoMap = model->GetBoneInfoMap();
 }
 
 }

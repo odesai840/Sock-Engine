@@ -2,7 +2,6 @@
 #define EDITOR_APPLICATION_H
 
 #include "Application/Application.h"
-#include "imgui/imgui.h"
 #include "Renderer/Renderer.h"
 #include "Scene/Scene.h"
 
@@ -75,14 +74,17 @@ private:
     void DrawMenuBar();
     void DrawViewport();
     void DrawSceneHierarchy();
+    void DrawInspector();
+    void DrawDebugPanel();
+    void DrawOutputLog();
+
+    // ECS interface
     void DrawEntityNode(Entity entity);
     void DrawComponents(Entity entity);
     void DrawTransformComponent(Entity entity);
     void DrawModelComponent(Entity entity);
+    void DrawAnimatorComponent(Entity entity);
     void DrawAddComponentPopup(Entity entity);
-    void DrawInspector();
-    void DrawDebugPanel();
-    void DrawOutputLog();
 
     bool m_ShowAboutWindow = false;
 };

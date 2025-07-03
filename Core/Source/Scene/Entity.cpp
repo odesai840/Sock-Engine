@@ -48,7 +48,7 @@ void Entity::SetParent(Entity parent) {
     
     if (hasTransform) {
         auto& transform = GetComponent<TransformComponent>();
-        worldTransform = transform.GetWorldModelMatrix(m_Registry->GetRegistry());
+        worldTransform = transform.GetWorldModelMatrix(m_Registry->GetNativeRegistry());
     }
     
     // Get or create relationship component
@@ -88,7 +88,7 @@ void Entity::SetParent(Entity parent) {
         if (parent && parent.HasComponent<TransformComponent>()) {
             // Get the parent's world transform
             auto& parentTransform = parent.GetComponent<TransformComponent>();
-            glm::mat4 parentWorldMatrix = parentTransform.GetWorldModelMatrix(m_Registry->GetRegistry());
+            glm::mat4 parentWorldMatrix = parentTransform.GetWorldModelMatrix(m_Registry->GetNativeRegistry());
             
             // Calculate the inverse of parent's world transform
             glm::mat4 inverseParentMatrix = glm::inverse(parentWorldMatrix);

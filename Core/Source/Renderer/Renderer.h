@@ -98,6 +98,8 @@ private:
     // Shaders
     std::unique_ptr<Shader> m_ShadowMapShader;
     std::unique_ptr<Shader> m_LightingShader;
+    std::unique_ptr<Shader> m_ShadowMapAnimatedShader;
+    std::unique_ptr<Shader> m_LightingAnimatedShader;
 
     // Internal rendering methods
     void BeginScene(Camera& camera);
@@ -105,6 +107,9 @@ private:
     void BeginShadowPass(const glm::vec3& lightDir, float lightDistance);
     void EndShadowPass();
     void SetupSkybox();
+
+    // Skeletal animation
+    void SetBoneMatrices(const Entity& entity, Shader& shader);
     
     // Scene data collection
     std::vector<Entity> CollectRenderableEntities(Scene& scene);

@@ -4,10 +4,8 @@
 #include "Registry.h"
 #include "Entity.h"
 #include "Camera/Camera.h"
-#include "Renderer/Renderer.h"
 #include <vector>
 #include <string>
-#include <memory>
 
 namespace SockEngine {
 
@@ -28,7 +26,7 @@ public:
     void DestroyEntity(Entity entity);
 
     // Model loading
-    Entity LoadModel(const std::string& filepath, const glm::vec3& position = glm::vec3(0.0f), 
+    Entity LoadModel(const std::string& filepath, const std::string& animation = "", const glm::vec3& position = glm::vec3(0.0f),
                      const glm::vec3& scale = glm::vec3(1.0f));
 
     // Entity queries
@@ -41,7 +39,8 @@ public:
     Entity GetRootEntity() const { return m_RootEntity; }
 
     // Registry access
-    Registry& GetRegistry() { return m_Registry; }
+    Registry& GetSceneRegistry() { return m_Registry; }
+    entt::registry& GetNativeRegistry() { return m_Registry.GetNativeRegistry(); }
 
     // Selection support for editor
     void SetSelectedEntity(Entity entity) { m_SelectedEntity = entity; }

@@ -31,8 +31,13 @@ EditorApplication::EditorApplication()
     m_Renderer->LoadSkybox(skyboxFaces);
     m_SkyboxEnabled = m_Renderer->IsSkyboxEnabled();
     
-    // Add a model to the scene
+    // Regular environment model
     m_ActiveScene->LoadModel("../Assets/Models/sponza/sponza/Sponza.gltf");
+
+    // Animated character model
+    m_ActiveScene->LoadModel("../Assets/Models/vampire/dancing_vampire.dae",
+                            "../Assets/Models/vampire/dancing_vampire.dae",
+                            glm::vec3(0, 1315, -300), glm::vec3(75, 75, 75));
 }
 
 EditorApplication::~EditorApplication() {
@@ -447,7 +452,7 @@ void EditorApplication::DrawEntityNode(Entity entity) {
             auto& relationship = entity.GetComponent<RelationshipComponent>();
             
             for (auto childHandle : relationship.children) {
-                Entity childEntity(childHandle, &m_ActiveScene->GetRegistry());
+                Entity childEntity(childHandle, &m_ActiveScene->GetSceneRegistry());
                 if (childEntity) {
                     DrawEntityNode(childEntity);
                 }
@@ -467,7 +472,7 @@ void EditorApplication::DrawInspector() {
         return;
     }
     
-    auto& registry = m_ActiveScene->GetRegistry().GetRegistry();
+    auto& registry = m_ActiveScene->GetNativeRegistry();
     auto entityHandle = static_cast<entt::entity>(selectedEntity);
 
     // Special handling for scene root entity
@@ -529,7 +534,7 @@ void EditorApplication::DrawInspector() {
 void EditorApplication::DrawComponents(Entity entity) {
     if (!entity) return;
     
-    auto& registry = m_ActiveScene->GetRegistry().GetRegistry();
+    auto& registry = m_ActiveScene->GetNativeRegistry();
     auto entityHandle = static_cast<entt::entity>(entity);
     
     // Draw Transform component (should be present on all entities except scene root)
@@ -541,11 +546,16 @@ void EditorApplication::DrawComponents(Entity entity) {
     if (registry.all_of<ModelComponent>(entityHandle)) {
         DrawModelComponent(entity);
     }
+
+    // Draw Animator component if present
+    if (registry.all_of<AnimatorComponent>(entityHandle)) {
+        DrawAnimatorComponent(entity);
+    }
 }
 
 void EditorApplication::DrawTransformComponent(Entity entity) {
     if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
-        auto& registry = m_ActiveScene->GetRegistry().GetRegistry();
+        auto& registry = m_ActiveScene->GetNativeRegistry();
         auto entityHandle = static_cast<entt::entity>(entity);
         auto& transformComponent = registry.get<TransformComponent>(entityHandle);
         
@@ -596,7 +606,7 @@ void EditorApplication::DrawTransformComponent(Entity entity) {
 
 void EditorApplication::DrawModelComponent(Entity entity) {
     if (ImGui::CollapsingHeader("Model", ImGuiTreeNodeFlags_DefaultOpen)) {
-        auto& registry = m_ActiveScene->GetRegistry().GetRegistry();
+        auto& registry = m_ActiveScene->GetNativeRegistry();
         auto entityHandle = static_cast<entt::entity>(entity);
         auto& modelComponent = registry.get<ModelComponent>(entityHandle);
         
@@ -616,7 +626,7 @@ void EditorApplication::DrawModelComponent(Entity entity) {
         
         // Load model button
         if (ImGui::Button("Load Model")) {
-            // In a full implementation, this would open a file dialog
+            // Currently, there is no file system, so a popup will be shown for now
             ImGui::OpenPopup("ModelLoadNotSupported");
         }
         
@@ -630,17 +640,134 @@ void EditorApplication::DrawModelComponent(Entity entity) {
     }
 }
 
+void EditorApplication::DrawAnimatorComponent(Entity entity) {
+    if (ImGui::CollapsingHeader("Animator", ImGuiTreeNodeFlags_DefaultOpen)) {
+        auto& registry = m_ActiveScene->GetNativeRegistry();
+        auto entityHandle = static_cast<entt::entity>(entity);
+        auto& animatorComponent = registry.get<AnimatorComponent>(entityHandle);
+        
+        // Initialize animator if needed
+        if (!animatorComponent.animator && registry.all_of<ModelComponent>(entityHandle)) {
+            auto& modelComponent = registry.get<ModelComponent>(entityHandle);
+            if (modelComponent.model && !modelComponent.modelPath.empty()) {
+                // Try to initialize with the model file (assuming it contains animations)
+                animatorComponent.Initialize(modelComponent.model, modelComponent.modelPath);
+            }
+        }
+        
+        // Show current animation info
+        if (animatorComponent.currentAnimation) {
+            ImGui::Text("Current Animation: %s", animatorComponent.currentAnimationName.c_str());
+            ImGui::Text("Duration: %.2f seconds", animatorComponent.GetDuration() / 1000.0f);
+            ImGui::Text("Current Time: %.2f seconds", animatorComponent.GetCurrentTime() / 1000.0f);
+            
+            // Progress bar
+            float progress = animatorComponent.GetDuration() > 0.0f ? 
+                           animatorComponent.GetCurrentTime() / animatorComponent.GetDuration() : 0.0f;
+            ImGui::ProgressBar(progress, ImVec2(-1.0f, 0.0f));
+            
+            // Play/Pause button
+            if (animatorComponent.IsPlaying()) {
+                if (ImGui::Button("Pause")) {
+                    animatorComponent.Pause();
+                }
+            } else {
+                if (ImGui::Button("Play")) {
+                    animatorComponent.Play();
+                }
+            }
+            
+            ImGui::SameLine();
+            if (ImGui::Button("Stop")) {
+                animatorComponent.Stop();
+            }
+            
+            // Looping checkbox
+            bool isLooping = animatorComponent.IsLooping();
+            if (ImGui::Checkbox("Loop", &isLooping)) {
+                animatorComponent.SetLooping(isLooping);
+            }
+            
+            // Playback speed
+            float speed = animatorComponent.GetPlaybackSpeed();
+            if (ImGui::SliderFloat("Speed", &speed, 0.0f, 3.0f, "%.2fx")) {
+                animatorComponent.SetPlaybackSpeed(speed);
+            }
+            
+            // Animation selection
+            if (animatorComponent.animations.size() > 1) {
+                ImGui::Text("Available Animations:");
+                
+                for (const auto& [name, animation] : animatorComponent.animations) {
+                    bool isSelected = (name == animatorComponent.currentAnimationName);
+                    
+                    if (ImGui::Selectable(name.c_str(), isSelected)) {
+                        if (!isSelected) {
+                            animatorComponent.PlayAnimation(name);
+                        }
+                    }
+                }
+            }
+            
+            // Animation loading
+            if (ImGui::Button("Load Animation File")) {
+                auto& modelComponent = registry.get<ModelComponent>(entityHandle);
+                if (modelComponent.model) {
+                    // Currently, there is no file system, so a popup will be shown for now
+                    ImGui::OpenPopup("AnimationLoadNotSupported");
+                }
+            }
+            
+            if (ImGui::BeginPopup("AnimationLoadNotSupported")) {
+                ImGui::Text("Sorry, not implemented yet :(");
+                if (ImGui::Button("Close")) {
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            }
+            
+        } else {
+            ImGui::Text("No animation loaded");
+            
+            // Try to auto-initialize if we have a model
+            if (registry.all_of<ModelComponent>(entityHandle)) {
+                auto& modelComponent = registry.get<ModelComponent>(entityHandle);
+                
+                if (ImGui::Button("Initialize with Model")) {
+                    if (modelComponent.model && !modelComponent.modelPath.empty()) {
+                        animatorComponent.Initialize(modelComponent.model, modelComponent.modelPath);
+                    }
+                }
+                
+                ImGui::TextWrapped("Tip: Make sure your model file contains animation data, or load a separate animation file.");
+            } else {
+                ImGui::TextWrapped("Add a Model component first, then initialize the animator.");
+            }
+        }
+    }
+}
+
 void EditorApplication::DrawAddComponentPopup(Entity entity) {
     if (!entity) {
         return;
     }
     
-    auto& registry = m_ActiveScene->GetRegistry().GetRegistry();
+    auto& registry = m_ActiveScene->GetNativeRegistry();
     auto entityHandle = static_cast<entt::entity>(entity);
     
     if (ImGui::MenuItem("Model")) {
         if (!registry.all_of<ModelComponent>(entityHandle)) {
             auto& model = registry.emplace<ModelComponent>(entityHandle);
+            ImGui::CloseCurrentPopup();
+        }
+        else {
+            ImGui::CloseCurrentPopup();
+        }
+    }
+
+    if (ImGui::MenuItem("Animator")) {
+        if (!registry.all_of<AnimatorComponent>(entityHandle)) {
+            auto& animator = registry.emplace<AnimatorComponent>(entityHandle);
             ImGui::CloseCurrentPopup();
         }
         else {

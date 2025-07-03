@@ -11,8 +11,13 @@ Renderer::Renderer()
     : m_DirectionalLightDir(glm::vec3(-0.2f, -1.0f, -0.3f))
 {
     m_SkyboxShader = std::make_unique<Shader>("../Shaders/Skybox.vert", "../Shaders/Skybox.frag");
+    // Main rendering shaders for non-animated objects
     m_ShadowMapShader = std::make_unique<Shader>("../Shaders/ShadowMap.vert", "../Shaders/ShadowMap.frag");
     m_LightingShader = std::make_unique<Shader>("../Shaders/Lighting.vert", "../Shaders/Lighting.frag");
+    
+    // Main rendering shaders for animated objects
+    m_ShadowMapAnimatedShader = std::make_unique<Shader>("../Shaders/ShadowMapAnimated.vert", "../Shaders/ShadowMap.frag");
+    m_LightingAnimatedShader = std::make_unique<Shader>("../Shaders/LightingAnimated.vert", "../Shaders/Lighting.frag");
 }
 
 Renderer::~Renderer() {
@@ -67,7 +72,7 @@ void Renderer::RenderScene(Scene& scene, Camera& camera) {
 std::vector<Entity> Renderer::CollectRenderableEntities(Scene& scene) {
     std::vector<Entity> entities;
     
-    auto& registry = scene.GetRegistry().GetRegistry();
+    auto& registry = scene.GetNativeRegistry();
     auto view = registry.view<TransformComponent, ModelComponent, ActiveComponent>();
     
     for (auto entityHandle : view) {
@@ -75,7 +80,7 @@ std::vector<Entity> Renderer::CollectRenderableEntities(Scene& scene) {
         auto& model = view.get<ModelComponent>(entityHandle);
         
         if (active.active && model.model) {
-            Entity entity(entityHandle, &scene.GetRegistry());
+            Entity entity(entityHandle, &scene.GetSceneRegistry());
             entities.push_back(entity);
         }
     }
@@ -86,10 +91,7 @@ std::vector<Entity> Renderer::CollectRenderableEntities(Scene& scene) {
 void Renderer::RenderShadowPass(const std::vector<Entity>& entities, Scene& scene) {
     BeginShadowPass(m_DirectionalLightDir, 50000.0f);
     
-    m_ShadowMapShader->Use();
-    m_ShadowMapShader->SetMat4("lightSpaceMatrix", m_LightSpaceMatrix);
-    
-    auto& registry = scene.GetRegistry().GetRegistry();
+    auto& registry = scene.GetNativeRegistry();
     
     // Render all entities that cast shadows
     for (const auto& entity : entities) {
@@ -100,8 +102,20 @@ void Renderer::RenderShadowPass(const std::vector<Entity>& entities, Scene& scen
                 auto& transform = entity.GetComponent<TransformComponent>();
                 glm::mat4 worldMatrix = transform.GetWorldModelMatrix(registry);
                 
-                m_ShadowMapShader->SetMat4("model", worldMatrix);
-                modelComponent.model->Draw(*m_ShadowMapShader);
+                // Choose appropriate shader based on whether entity has animation
+                bool isAnimated = entity.HasComponent<AnimatorComponent>();
+                Shader* shadowShader = isAnimated ? m_ShadowMapAnimatedShader.get() : m_ShadowMapShader.get();
+                
+                shadowShader->Use();
+                shadowShader->SetMat4("lightSpaceMatrix", m_LightSpaceMatrix);
+                shadowShader->SetMat4("model", worldMatrix);
+
+                // Handle skeletal animation only for animated models
+                if (isAnimated) {
+                    SetBoneMatrices(entity, *shadowShader);
+                }
+                
+                modelComponent.model->Draw(*shadowShader);
             }
         }
     }
@@ -112,33 +126,7 @@ void Renderer::RenderShadowPass(const std::vector<Entity>& entities, Scene& scen
 void Renderer::RenderMainPass(const std::vector<Entity>& entities, Scene& scene, Camera& camera) {
     BeginScene(camera);
     
-    m_LightingShader->Use();
-    m_LightingShader->SetVec3("viewPos", camera.Position);
-    
-    // Set common uniforms
-    m_LightingShader->SetBool("debugNormals", m_DebugNormals);
-    m_LightingShader->SetBool("debugSpec", m_DebugSpecular);
-    
-    // Set lighting parameters
-    m_LightingShader->SetVec3("dirLight.direction", m_DirectionalLightDir);
-    m_LightingShader->SetVec3("dirLight.ambient", 0.1f, 0.1f, 0.1f);
-    m_LightingShader->SetVec3("dirLight.diffuse", 1.0f, 1.0f, 1.0f);
-    m_LightingShader->SetVec3("dirLight.specular", 0.3f, 0.3f, 0.3f);
-    
-    // Set shadow mapping uniforms
-    m_LightingShader->SetMat4("lightSpaceMatrix", m_LightSpaceMatrix);
-    m_LightingShader->SetFloat("shadowBias", m_ShadowBias);
-    
-    // Bind shadow map
-    glActiveTexture(GL_TEXTURE0 + 5);
-    glBindTexture(GL_TEXTURE_2D, m_DepthMap);
-    m_LightingShader->SetInt("shadowMap", 5);
-    
-    // Set view/projection matrices
-    m_LightingShader->SetMat4("projection", m_ProjectionMatrix);
-    m_LightingShader->SetMat4("view", m_ViewMatrix);
-    
-    auto& registry = scene.GetRegistry().GetRegistry();
+    auto& registry = scene.GetNativeRegistry();
     
     // Render all entities
     for (const auto& entity : entities) {
@@ -146,15 +134,50 @@ void Renderer::RenderMainPass(const std::vector<Entity>& entities, Scene& scene,
             auto& modelComponent = entity.GetComponent<ModelComponent>();
             auto& transform = entity.GetComponent<TransformComponent>();
             
+            // Choose appropriate shader based on whether entity has animation
+            bool isAnimated = entity.HasComponent<AnimatorComponent>();
+            Shader* lightingShader = isAnimated ? m_LightingAnimatedShader.get() : m_LightingShader.get();
+            
+            lightingShader->Use();
+            lightingShader->SetVec3("viewPos", camera.Position);
+            
+            // Set common uniforms
+            lightingShader->SetBool("debugNormals", m_DebugNormals);
+            lightingShader->SetBool("debugSpec", m_DebugSpecular);
+            
+            // Set lighting parameters
+            lightingShader->SetVec3("dirLight.direction", m_DirectionalLightDir);
+            lightingShader->SetVec3("dirLight.ambient", 0.1f, 0.1f, 0.1f);
+            lightingShader->SetVec3("dirLight.diffuse", 1.0f, 1.0f, 1.0f);
+            lightingShader->SetVec3("dirLight.specular", 0.3f, 0.3f, 0.3f);
+            
+            // Set shadow mapping uniforms
+            lightingShader->SetMat4("lightSpaceMatrix", m_LightSpaceMatrix);
+            lightingShader->SetFloat("shadowBias", m_ShadowBias);
+            
+            // Bind shadow map
+            glActiveTexture(GL_TEXTURE0 + 5);
+            glBindTexture(GL_TEXTURE_2D, m_DepthMap);
+            lightingShader->SetInt("shadowMap", 5);
+            
+            // Set view/projection matrices
+            lightingShader->SetMat4("projection", m_ProjectionMatrix);
+            lightingShader->SetMat4("view", m_ViewMatrix);
+            
             // Set material properties
-            m_LightingShader->SetFloat("material.shininess", modelComponent.shininess);
+            lightingShader->SetFloat("material.shininess", modelComponent.shininess);
             
             // Set model transform
             glm::mat4 worldMatrix = transform.GetWorldModelMatrix(registry);
-            m_LightingShader->SetMat4("model", worldMatrix);
+            lightingShader->SetMat4("model", worldMatrix);
+
+            // Handle skeletal animation only for animated models
+            if (isAnimated) {
+                SetBoneMatrices(entity, *lightingShader);
+            }
             
             // Draw the model
-            modelComponent.model->Draw(*m_LightingShader);
+            modelComponent.model->Draw(*lightingShader);
         }
     }
     
@@ -164,6 +187,29 @@ void Renderer::RenderMainPass(const std::vector<Entity>& entities, Scene& scene,
     }
     
     EndScene();
+}
+
+void Renderer::SetBoneMatrices(const Entity& entity, Shader& shader) {
+    // Check if entity has an animator component
+    if (entity.HasComponent<AnimatorComponent>()) {
+        auto& animatorComponent = entity.GetComponent<AnimatorComponent>();
+        
+        // Get bone matrices from the animator
+        std::vector<glm::mat4> boneMatrices = animatorComponent.GetBoneMatrices();
+        
+        // Upload bone matrices to shader
+        for (int i = 0; i < boneMatrices.size() && i < 100; ++i) {
+            std::string uniformName = "finalBonesMatrices[" + std::to_string(i) + "]";
+            shader.SetMat4(uniformName, boneMatrices[i]);
+        }
+    } else {
+        // For non-animated models, set identity matrices
+        glm::mat4 identity = glm::mat4(1.0f);
+        for (int i = 0; i < 100; ++i) {
+            std::string uniformName = "finalBonesMatrices[" + std::to_string(i) + "]";
+            shader.SetMat4(uniformName, identity);
+        }
+    }
 }
 
 void Renderer::RenderSkybox() {
@@ -394,6 +440,13 @@ void Renderer::RenderModel(Model& model, const glm::mat4& transform, Shader& sha
     
     // Set model transform
     shader.SetMat4("model", transform);
+
+    // Set identity matrices for bone transforms
+    glm::mat4 identity = glm::mat4(1.0f);
+    for (int i = 0; i < 100; ++i) {
+        std::string uniformName = "finalBonesMatrices[" + std::to_string(i) + "]";
+        shader.SetMat4(uniformName, identity);
+    }
     
     // Draw the model
     model.Draw(shader);

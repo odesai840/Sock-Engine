@@ -55,22 +55,22 @@ private:
 // Template implementations
 template<typename T, typename... Args>
 T& Entity::AddComponent(Args&&... args) {
-    return m_Registry->GetRegistry().emplace<T>(m_EntityHandle, std::forward<Args>(args)...);
+    return m_Registry->GetNativeRegistry().emplace<T>(m_EntityHandle, std::forward<Args>(args)...);
 }
 
 template<typename T>
 T& Entity::GetComponent() const {
-    return m_Registry->GetRegistry().get<T>(m_EntityHandle);
+    return m_Registry->GetNativeRegistry().get<T>(m_EntityHandle);
 }
 
 template<typename T>
 bool Entity::HasComponent() const {
-    return m_Registry->GetRegistry().all_of<T>(m_EntityHandle);
+    return m_Registry->GetNativeRegistry().all_of<T>(m_EntityHandle);
 }
 
 template<typename T>
 void Entity::RemoveComponent() {
-    m_Registry->GetRegistry().remove<T>(m_EntityHandle);
+    m_Registry->GetNativeRegistry().remove<T>(m_EntityHandle);
 }
 
 }

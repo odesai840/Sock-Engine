@@ -167,7 +167,25 @@ void Animation::ReadBonesFromAnimation(const aiAnimation* animation,
         if (it != m_BoneInfoMap.end()) {
             m_Bones.push_back(Bone(channel->mNodeName.data, it->second.id, channel));
         } else {
-            std::cout << "WARNING: Animation bone '" << boneName << "' not found in model bone info" << std::endl;
+            // Clean the bone name
+            std::string cleanedName = boneName;
+            
+            // Remove Assimp suffixes
+            if (cleanedName.find("_$AssimpFbx$_Rotation") != std::string::npos) {
+                cleanedName = cleanedName.substr(0, cleanedName.find("_$AssimpFbx$_Rotation"));
+            } else if (cleanedName.find("_$AssimpFbx$_Translation") != std::string::npos) {
+                cleanedName = cleanedName.substr(0, cleanedName.find("_$AssimpFbx$_Translation"));
+            } else if (cleanedName.find("_$AssimpFbx$_Scaling") != std::string::npos) {
+                cleanedName = cleanedName.substr(0, cleanedName.find("_$AssimpFbx$_Scaling"));
+            }
+            
+            // Try to find with cleaned name
+            auto cleanIt = m_BoneInfoMap.find(cleanedName);
+            if (cleanIt != m_BoneInfoMap.end()) {
+                m_Bones.push_back(Bone(cleanedName, cleanIt->second.id, channel));
+            } else {
+                std::cout << "WARNING: Animation bone '" << boneName << "' (cleaned: '" << cleanedName << "') not found in model bone info" << std::endl;
+            }
         }
     }
 }

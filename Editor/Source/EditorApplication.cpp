@@ -35,9 +35,9 @@ EditorApplication::EditorApplication()
     m_ActiveScene->LoadModel("../Assets/Models/sponza/sponza/Sponza.gltf");
 
     // Animated character model
-    m_ActiveScene->LoadModel("../Assets/Models/vampire/dancing_vampire.dae",
-                            "../Assets/Models/vampire/dancing_vampire.dae",
-                            glm::vec3(0, 1315, -300), glm::vec3(75, 75, 75));
+    m_ActiveScene->LoadModel("../Assets/Models/mannequin/mannequin.fbx",
+                            "../Assets/Models/mannequin/mannequin.fbx",
+                            glm::vec3(0, 1315, -300), glm::vec3(1, 1, 1));
 }
 
 EditorApplication::~EditorApplication() {
@@ -658,8 +658,8 @@ void EditorApplication::DrawAnimatorComponent(Entity entity) {
         // Show current animation info
         if (animatorComponent.currentAnimation) {
             ImGui::Text("Current Animation: %s", animatorComponent.currentAnimationName.c_str());
-            ImGui::Text("Duration: %.2f seconds", animatorComponent.GetDuration() / 1000.0f);
-            ImGui::Text("Current Time: %.2f seconds", animatorComponent.GetCurrentTime() / 1000.0f);
+            ImGui::Text("Duration: %.0f ticks", animatorComponent.GetDuration());
+            ImGui::Text("Current Tick: %.0f", animatorComponent.GetCurrentTime());
             
             // Progress bar
             float progress = animatorComponent.GetDuration() > 0.0f ? 

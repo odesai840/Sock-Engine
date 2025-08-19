@@ -21,8 +21,12 @@ Note: Sock Engine is currently untested on platforms other than Windows.
    .\Setup-Windows.bat
    ```
 
-## Demo Screenshots
-![Screenshot](/demo/scene1.png)
-![Screenshot](/demo/scene2.png)
-![Screenshot](/demo/norm_debug.png)
-![Screenshot](/demo/spec_debug.png)
+## Demo Videos
+
+<video width="320" height="240" controls muted autoPlay loop>
+   <source src="demo/sockenginedemo.mp4" type="video/mp4"></source>
+</video>
+
+<video width="320" height="240" controls muted autoPlay loop>
+    <source src="demo/sockengineanim.mp4" type="video/mp4"></source>
+</video>

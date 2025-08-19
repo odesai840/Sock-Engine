@@ -22,11 +22,5 @@ Note: Sock Engine is currently untested on platforms other than Windows.
    ```
 
 ## Demo Videos
-
-<video width="320" height="240" controls muted autoPlay loop>
-   <source src="demo/sockenginedemo.mp4" type="video/mp4"></source>
-</video>
-
-<video width="320" height="240" controls muted autoPlay loop>
-    <source src="demo/sockengineanim.mp4" type="video/mp4"></source>
-</video>
+![Demo](/demo/sockenginedemo.mp4)
+![Animation](/demo/sockengineanim.mp4)

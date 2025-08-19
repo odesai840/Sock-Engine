@@ -23,6 +23,6 @@ Note: Sock Engine is currently untested on platforms other than Windows.
 
 ## Demo Videos
 
-[![Demo](https://img.youtube.com/vi/njlRXexTTWY/0.jpg)](https://www.youtube.com/watch?v=njlRXexTTWY)
+[Feature Demo](https://www.youtube.com/watch?v=njlRXexTTWY)
 
-[![Demo](https://img.youtube.com/vi/6z0e2cqo2Xo/0.jpg)](https://www.youtube.com/watch?v=6z0e2cqo2Xo)
+[Animation Demo](https://www.youtube.com/watch?v=6z0e2cqo2Xo)

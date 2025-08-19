@@ -23,6 +23,6 @@ Note: Sock Engine is currently untested on platforms other than Windows.
 
 ## Demo Videos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/njlRXexTTWY?si=ZRScDtdSyf4oHvWC" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+[![Demo](https://img.youtube.com/vi/njlRXexTTWY/0.jpg)](https://www.youtube.com/watch?v=njlRXexTTWY)
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/6z0e2cqo2Xo?si=awwq1Dwy8q_aPpEl" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+[![Demo](https://img.youtube.com/vi/6z0e2cqo2Xo/0.jpg)](https://www.youtube.com/watch?v=6z0e2cqo2Xo)

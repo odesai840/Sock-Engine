@@ -65,9 +65,6 @@ private:
         {"3440x1440", 3440, 1440}
     };
 
-    // Editor application window
-    void MinimizeWindow();
-
     // Editor windows
     void ShowAboutWindow();
     void DrawAboutWindow();

@@ -152,10 +152,6 @@ void EditorApplication::OnImGuiRender() {
     DrawOutputLog();
 }
 
-void EditorApplication::MinimizeWindow() {
-    glfwIconifyWindow(m_Window->GetNativeWindow());
-}
-
 void EditorApplication::DrawMenuBar() {
     if (ImGui::BeginMenuBar()) {
         std::vector<Menu> menus = {
@@ -195,24 +191,6 @@ void EditorApplication::DrawMenuBar() {
                 }
                 ImGui::EndMenu();
             }
-        }
-
-        // Render custom window decorations
-        float buttonWidth = 30.0f;
-        float buttonSpacing = 2.0f;
-        float totalButtonWidth = (buttonWidth * 2) + (buttonSpacing * 2);
-        
-        ImVec2 menuBarSize = ImGui::GetWindowSize();
-        ImGui::SetCursorPosX(menuBarSize.x - totalButtonWidth - 2.0f);
-        
-        if (ImGui::Button("-", ImVec2(buttonWidth, 0))) {
-            MinimizeWindow();
-        }
-        
-        ImGui::SameLine(0, buttonSpacing);
-        
-        if (ImGui::Button("×", ImVec2(buttonWidth, 0))) {
-            Close();
         }
         
         ImGui::EndMenuBar();
